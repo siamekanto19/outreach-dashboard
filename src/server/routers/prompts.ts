@@ -9,7 +9,10 @@ import { db } from "@/db";
 import { prompts } from "@/db/schema";
 import { completeWithOpenRouter } from "@/server/ai/openrouter";
 import { getDefaultPromptForUser } from "@/server/data/prompts";
+import { splitLinesAndCommas } from "@/server/text";
 import { protectedProcedure, router } from "@/server/trpc";
+
+type PromptRow = typeof prompts.$inferSelect;
 
 const promptInput = z.object({
   name: z.string().trim().min(1, "Prompt name is required."),
@@ -22,26 +25,36 @@ const promptInput = z.object({
   avoidList: z.string().trim().optional(),
 });
 
-function splitAvoidList(value?: string) {
-  return (value ?? "")
-    .split("\n")
-    .flatMap((line) => line.split(","))
-    .map((item) => item.trim())
-    .filter(Boolean);
+type PromptInput = z.infer<typeof promptInput>;
+
+function mapPromptForm(prompt: PromptRow, isCustom?: boolean) {
+  return {
+    id: prompt.id,
+    name: prompt.name,
+    systemPrompt: prompt.systemPrompt,
+    tone: prompt.tone ?? "",
+    lengthPreference: prompt.lengthPreference ?? "",
+    avoidList: prompt.avoidList.join("\n"),
+    ...(isCustom === undefined ? {} : { isCustom }),
+  };
+}
+
+function promptUpdateValues(input: PromptInput) {
+  return {
+    name: input.name,
+    systemPrompt: input.systemPrompt,
+    tone: input.tone || null,
+    lengthPreference: input.lengthPreference || null,
+    avoidList: splitLinesAndCommas(input.avoidList),
+    updatedAt: new Date(),
+  };
 }
 
 export const promptsRouter = router({
   default: protectedProcedure.query(async ({ ctx }) => {
     const prompt = await getDefaultPromptForUser(ctx.user.id);
 
-    return {
-      id: prompt.id,
-      name: prompt.name,
-      systemPrompt: prompt.systemPrompt,
-      tone: prompt.tone ?? "",
-      lengthPreference: prompt.lengthPreference ?? "",
-      avoidList: prompt.avoidList.join("\n"),
-    };
+    return mapPromptForm(prompt);
   }),
   getByContext: protectedProcedure
     .input(
@@ -65,28 +78,12 @@ export const promptsRouter = router({
           .limit(1);
 
         if (customPrompt) {
-          return {
-            id: customPrompt.id,
-            name: customPrompt.name,
-            systemPrompt: customPrompt.systemPrompt,
-            tone: customPrompt.tone ?? "",
-            lengthPreference: customPrompt.lengthPreference ?? "",
-            avoidList: customPrompt.avoidList.join("\n"),
-            isCustom: true,
-          };
+          return mapPromptForm(customPrompt, true);
         }
       }
 
       const defaultPrompt = await getDefaultPromptForUser(ctx.user.id);
-      return {
-        id: defaultPrompt.id,
-        name: defaultPrompt.name,
-        systemPrompt: defaultPrompt.systemPrompt,
-        tone: defaultPrompt.tone ?? "",
-        lengthPreference: defaultPrompt.lengthPreference ?? "",
-        avoidList: defaultPrompt.avoidList.join("\n"),
-        isCustom: false,
-      };
+      return mapPromptForm(defaultPrompt, false);
     }),
   updateDefault: protectedProcedure
     .input(promptInput)
@@ -95,25 +92,11 @@ export const promptsRouter = router({
 
       const [updated] = await db
         .update(prompts)
-        .set({
-          name: input.name,
-          systemPrompt: input.systemPrompt,
-          tone: input.tone || null,
-          lengthPreference: input.lengthPreference || null,
-          avoidList: splitAvoidList(input.avoidList),
-          updatedAt: new Date(),
-        })
+        .set(promptUpdateValues(input))
         .where(and(eq(prompts.id, prompt.id), eq(prompts.userId, ctx.user.id)))
         .returning();
 
-      return {
-        id: updated.id,
-        name: updated.name,
-        systemPrompt: updated.systemPrompt,
-        tone: updated.tone ?? "",
-        lengthPreference: updated.lengthPreference ?? "",
-        avoidList: updated.avoidList.join("\n"),
-      };
+      return mapPromptForm(updated);
     }),
   saveForContext: protectedProcedure
     .input(
@@ -138,26 +121,11 @@ export const promptsRouter = router({
       if (existing) {
         const [updated] = await db
           .update(prompts)
-          .set({
-            name: input.name,
-            systemPrompt: input.systemPrompt,
-            tone: input.tone || null,
-            lengthPreference: input.lengthPreference || null,
-            avoidList: splitAvoidList(input.avoidList),
-            updatedAt: new Date(),
-          })
+          .set(promptUpdateValues(input))
           .where(and(eq(prompts.id, existing.id), eq(prompts.userId, ctx.user.id)))
           .returning();
 
-        return {
-          id: updated.id,
-          name: updated.name,
-          systemPrompt: updated.systemPrompt,
-          tone: updated.tone ?? "",
-          lengthPreference: updated.lengthPreference ?? "",
-          avoidList: updated.avoidList.join("\n"),
-          isCustom: true,
-        };
+        return mapPromptForm(updated, true);
       } else {
         const [created] = await db
           .insert(prompts)
@@ -170,20 +138,12 @@ export const promptsRouter = router({
             systemPrompt: input.systemPrompt,
             tone: input.tone || null,
             lengthPreference: input.lengthPreference || null,
-            avoidList: splitAvoidList(input.avoidList),
+            avoidList: splitLinesAndCommas(input.avoidList),
             isDefault: false,
           })
           .returning();
 
-        return {
-          id: created.id,
-          name: created.name,
-          systemPrompt: created.systemPrompt,
-          tone: created.tone ?? "",
-          lengthPreference: created.lengthPreference ?? "",
-          avoidList: created.avoidList.join("\n"),
-          isCustom: true,
-        };
+        return mapPromptForm(created, true);
       }
     }),
   improve: protectedProcedure

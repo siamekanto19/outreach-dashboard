@@ -3,7 +3,7 @@
  * Converts raw Drizzle rows into the stable client-facing shapes used by
  * offerings, prospects, and empty conversation states.
  */
-import { Conversation } from "@/types/outreach";
+import { Conversation, ConversationMessage } from "@/types/outreach";
 import { Offering } from "@/types/offering";
 import { Prospect } from "@/types/prospect";
 import { formatDate } from "@/server/format";
@@ -33,6 +33,22 @@ type ProspectRow = {
   sourceTypes?: string[];
 };
 
+type ConversationRow = {
+  id: string;
+  offeringId: string;
+  prospectId: string;
+  createdAt: Date;
+};
+
+type ConversationMessageRow = {
+  id: string;
+  role: string;
+  content: string;
+  createdAt: Date;
+  rating: number | null;
+  isFavorite: boolean;
+};
+
 export function mapOffering(row: OfferingRow): Offering {
   return {
     id: row.id,
@@ -58,6 +74,37 @@ export function mapProspect(row: ProspectRow): Prospect {
     manualContext: row.manualContext || "",
     aiProfileSummary: row.aiProfileSummary || "",
     createdAt: formatDate(row.createdAt),
+  };
+}
+
+export function mapConversationMessage(
+  message: ConversationMessageRow,
+): ConversationMessage {
+  return {
+    id: message.id,
+    role:
+      message.role === "prospect_reply"
+        ? "reply"
+        : message.role === "ai_reply"
+          ? "follow-up"
+          : "outbound",
+    content: message.content,
+    timestamp: message.createdAt.toISOString(),
+    rating: message.rating ?? undefined,
+    isFavourite: message.isFavorite,
+  };
+}
+
+export function mapConversation(
+  conversation: ConversationRow,
+  messages: ConversationMessageRow[],
+): Conversation {
+  return {
+    id: conversation.id,
+    offeringId: conversation.offeringId,
+    prospectId: conversation.prospectId,
+    createdAt: conversation.createdAt.toISOString(),
+    messages: messages.map(mapConversationMessage),
   };
 }
 

@@ -11,24 +11,8 @@ import { offerings } from "@/db/schema";
 import { completeWithOpenRouter } from "@/server/ai/openrouter";
 import { getOfferingsForUser } from "@/server/data/offerings";
 import { scrapeUrlWithFirecrawl } from "@/server/scraping/firecrawl";
+import { splitLines, stripProtocolAndTrailingSlash } from "@/server/text";
 import { protectedProcedure, router } from "@/server/trpc";
-
-function lines(value?: string) {
-  return (value ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function normalizeUrl(value?: string) {
-  const url = value?.trim();
-
-  if (!url) {
-    return null;
-  }
-
-  return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-}
 
 type ExtractedOffering = {
   summary?: string;
@@ -116,18 +100,18 @@ export const offeringsRouter = router({
           : extracted?.targetCustomers) ||
         null;
 
+      const proofPoints = splitLines(input.proofPoints);
+
       await db.insert(offerings).values({
         id: crypto.randomUUID(),
         userId: ctx.user.id,
         name: input.name,
-        websiteUrl: normalizeUrl(input.websiteUrl),
+        websiteUrl: stripProtocolAndTrailingSlash(input.websiteUrl),
         rawWebsiteContent: scraped?.markdown,
         manualContext: input.manualContext ?? "",
         aiSummary: extracted?.summary,
         targetCustomers,
-        proofPoints: lines(input.proofPoints).length
-          ? lines(input.proofPoints)
-          : extracted?.proofPoints ?? [],
+        proofPoints: proofPoints.length ? proofPoints : extracted?.proofPoints ?? [],
         painPoints: extracted?.painPoints ?? [],
         positioning: input.positioning || extracted?.positioning || null,
       });
@@ -159,13 +143,13 @@ export const offeringsRouter = router({
         throw notFound("Offering not found.");
       }
 
-      const proofPoints = lines(input.proofPoints);
+      const proofPoints = splitLines(input.proofPoints);
 
       await db
         .update(offerings)
         .set({
           name: input.name,
-          websiteUrl: normalizeUrl(input.websiteUrl),
+          websiteUrl: stripProtocolAndTrailingSlash(input.websiteUrl),
           manualContext: input.manualContext ?? "",
           targetCustomers: input.targetCustomers || null,
           proofPoints,

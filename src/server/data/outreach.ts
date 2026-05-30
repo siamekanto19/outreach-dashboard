@@ -12,7 +12,7 @@ import {
   prospects,
 } from "@/db/schema";
 import { Conversation } from "@/types/outreach";
-import { emptyConversation } from "./mappers";
+import { emptyConversation, mapConversation } from "./mappers";
 
 export async function getLatestConversationForUser(
   userId: string,
@@ -34,25 +34,7 @@ export async function getLatestConversationForUser(
     .where(eq(conversationMessages.conversationId, conversation.id))
     .orderBy(asc(conversationMessages.createdAt));
 
-  return {
-    id: conversation.id,
-    offeringId: conversation.offeringId,
-    prospectId: conversation.prospectId,
-    createdAt: conversation.createdAt.toISOString(),
-    messages: messages.map((message) => ({
-      id: message.id,
-      role:
-        message.role === "prospect_reply"
-          ? "reply"
-          : message.role === "ai_reply"
-            ? "follow-up"
-            : "outbound",
-      content: message.content,
-      timestamp: message.createdAt.toISOString(),
-      rating: message.rating ?? undefined,
-      isFavourite: message.isFavorite,
-    })),
-  };
+  return mapConversation(conversation, messages);
 }
 
 export async function getConversationSummariesForUser(userId: string) {

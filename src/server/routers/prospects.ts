@@ -12,19 +12,7 @@ import { getProspectsForUser } from "@/server/data/prospects";
 import { protectedProcedure, router } from "@/server/trpc";
 import { completeWithImage, completeWithOpenRouter } from "@/server/ai/openrouter";
 import { scrapeUrlWithFirecrawl } from "@/server/scraping/firecrawl";
-
-function csv(value?: string) {
-  return (value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function normalizeUrl(value: string) {
-  return value.startsWith("http://") || value.startsWith("https://")
-    ? value
-    : `https://${value}`;
-}
+import { splitCommaList, withHttps } from "@/server/text";
 
 type ExtractedProfile = {
   name?: string;
@@ -115,7 +103,7 @@ async function scrapeAndExtractSource(type: string, url: string): Promise<Scrape
 
     return {
       type,
-      url: normalizeUrl(url),
+      url: withHttps(url),
       rawContent: scraped.markdown.slice(0, 5000),
       extractedSummary: summary,
       status: "completed",
@@ -123,7 +111,7 @@ async function scrapeAndExtractSource(type: string, url: string): Promise<Scrape
   } catch {
     return {
       type,
-      url: normalizeUrl(url),
+      url: withHttps(url),
       rawContent: "",
       extractedSummary: null,
       status: "failed",
@@ -182,7 +170,7 @@ export const prospectsRouter = router({
           role,
           manualContext,
           aiProfileSummary: aiSummary,
-          tags: csv(input.tags),
+          tags: splitCommaList(input.tags),
         });
 
         for (const source of scrapedSources) {
@@ -242,7 +230,7 @@ export const prospectsRouter = router({
           company: input.company || null,
           role: input.role || null,
           manualContext: input.manualContext || null,
-          tags: csv(input.tags),
+          tags: splitCommaList(input.tags),
           updatedAt: new Date(),
         })
         .where(and(eq(prospects.id, input.id), eq(prospects.userId, ctx.user.id)));

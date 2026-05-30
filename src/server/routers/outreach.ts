@@ -16,10 +16,18 @@ import {
   prompts,
 } from "@/db/schema";
 import { completeWithOpenRouter } from "@/server/ai/openrouter";
+import { mapConversation, mapConversationMessage } from "@/server/data/mappers";
 import { getDefaultPromptForUser } from "@/server/data/prompts";
 import { protectedProcedure, router } from "@/server/trpc";
 
 type PromptRow = typeof prompts.$inferSelect;
+type ConversationRow = typeof conversations.$inferSelect;
+type ConversationMessageRow = typeof conversationMessages.$inferSelect;
+type OfferingRow = typeof offerings.$inferSelect;
+type ProspectRow = typeof prospects.$inferSelect;
+
+const FOLLOW_UP_SYSTEM_INSTRUCTIONS =
+  "You are now writing a follow-up reply in an existing conversation. Do not restart the cold outreach. Answer the prospect's latest question directly, preserve the same tone, and keep the conversation moving with one soft next step.";
 
 function notFound(message: string) {
   return new TRPCError({ code: "NOT_FOUND", message });
@@ -39,6 +47,187 @@ function promptPreferences(prompt: PromptRow) {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+function promptPreferenceBlock(prompt: PromptRow) {
+  const preferences = promptPreferences(prompt);
+
+  return preferences
+    ? `Prompt preferences:\n${preferences}`
+    : "Prompt preferences: use the saved system prompt.";
+}
+
+function userConversationWhere(userId: string, conversationId: string) {
+  return and(
+    eq(conversations.id, conversationId),
+    eq(conversations.userId, userId),
+  );
+}
+
+function userMessageWhere(userId: string, messageId: string) {
+  return and(
+    eq(conversationMessages.id, messageId),
+    eq(conversationMessages.userId, userId),
+  );
+}
+
+async function getConversationForUser(userId: string, conversationId: string) {
+  const [conversation] = await db
+    .select()
+    .from(conversations)
+    .where(userConversationWhere(userId, conversationId))
+    .limit(1);
+
+  return conversation;
+}
+
+async function getMessageForUser(userId: string, messageId: string) {
+  const [message] = await db
+    .select()
+    .from(conversationMessages)
+    .where(userMessageWhere(userId, messageId))
+    .limit(1);
+
+  return message;
+}
+
+function getConversationMessages(conversationId: string) {
+  return db
+    .select()
+    .from(conversationMessages)
+    .where(eq(conversationMessages.conversationId, conversationId))
+    .orderBy(asc(conversationMessages.createdAt));
+}
+
+async function getPromptForContext(
+  userId: string,
+  offeringId: string,
+  prospectId: string,
+) {
+  const [customPrompt] = await db
+    .select()
+    .from(prompts)
+    .where(
+      and(
+        eq(prompts.userId, userId),
+        eq(prompts.offeringId, offeringId),
+        eq(prompts.prospectId, prospectId),
+      ),
+    )
+    .limit(1);
+
+  return customPrompt ?? getDefaultPromptForUser(userId);
+}
+
+async function getOfferingAndProspectForUser(
+  userId: string,
+  offeringId: string,
+  prospectId: string,
+) {
+  const [[offering], [prospect]] = await Promise.all([
+    db
+      .select()
+      .from(offerings)
+      .where(and(eq(offerings.id, offeringId), eq(offerings.userId, userId)))
+      .limit(1),
+    db
+      .select()
+      .from(prospects)
+      .where(and(eq(prospects.id, prospectId), eq(prospects.userId, userId)))
+      .limit(1),
+  ]);
+
+  return { offering, prospect };
+}
+
+async function getConversationContext(userId: string, conversation: ConversationRow) {
+  const [{ offering, prospect }, thread] = await Promise.all([
+    getOfferingAndProspectForUser(
+      userId,
+      conversation.offeringId,
+      conversation.prospectId,
+    ),
+    getConversationMessages(conversation.id),
+  ]);
+
+  return { offering, prospect, thread };
+}
+
+function buildOutboundPrompt(
+  offering: OfferingRow,
+  prospect: ProspectRow,
+  prompt: PromptRow,
+) {
+  return [
+    {
+      role: "system" as const,
+      content: prompt.systemPrompt,
+    },
+    {
+      role: "user" as const,
+      content: [
+        "Generate one personalized outbound message.",
+        "",
+        "Offering:",
+        `Name: ${offering.name}`,
+        `Website: ${offering.websiteUrl ?? "not provided"}`,
+        `Context: ${offering.aiSummary || offering.manualContext}`,
+        `Target customers: ${offering.targetCustomers ?? "not specified"}`,
+        `Proof points: ${offering.proofPoints.join("; ") || "not provided"}`,
+        `Positioning: ${offering.positioning ?? "not provided"}`,
+        promptPreferenceBlock(prompt),
+        "",
+        "Prospect:",
+        `Name: ${prospect.name}`,
+        `Role: ${prospect.role ?? "not specified"}`,
+        `Company: ${prospect.company ?? "not specified"}`,
+        `Context: ${prospect.aiProfileSummary || prospect.manualContext || "not provided"}`,
+        `Tags: ${prospect.tags.join(", ") || "none"}`,
+        "",
+        "Return only the message text.",
+      ].join("\n"),
+    },
+  ];
+}
+
+function buildFollowUpPrompt(
+  offering: OfferingRow,
+  prospect: ProspectRow,
+  prompt: PromptRow,
+  thread: ConversationMessageRow[],
+) {
+  return [
+    {
+      role: "system" as const,
+      content: [prompt.systemPrompt, "", FOLLOW_UP_SYSTEM_INSTRUCTIONS].join("\n"),
+    },
+    {
+      role: "user" as const,
+      content: [
+        "Generate one natural follow-up reply.",
+        "",
+        "Offering:",
+        `Name: ${offering.name}`,
+        `Context: ${offering.aiSummary || offering.manualContext}`,
+        `Positioning: ${offering.positioning ?? "not provided"}`,
+        promptPreferenceBlock(prompt),
+        "",
+        "Prospect:",
+        `Name: ${prospect.name}`,
+        `Role: ${prospect.role ?? "not specified"}`,
+        `Company: ${prospect.company ?? "not specified"}`,
+        `Context: ${prospect.aiProfileSummary || prospect.manualContext || "not provided"}`,
+        "",
+        "Conversation so far:",
+        ...thread.map(
+          (message) =>
+            `${message.role === "prospect_reply" ? "Prospect" : "You"}: ${message.content}`,
+        ),
+        "",
+        "Return only the follow-up reply text.",
+      ].join("\n"),
+    },
+  ];
 }
 
 export const outreachRouter = router({
@@ -66,31 +255,9 @@ export const outreachRouter = router({
         return null;
       }
 
-      const messages = await db
-        .select()
-        .from(conversationMessages)
-        .where(eq(conversationMessages.conversationId, conversation.id))
-        .orderBy(asc(conversationMessages.createdAt));
+      const messages = await getConversationMessages(conversation.id);
 
-      return {
-        id: conversation.id,
-        offeringId: conversation.offeringId,
-        prospectId: conversation.prospectId,
-        createdAt: conversation.createdAt.toISOString(),
-        messages: messages.map((message) => ({
-          id: message.id,
-          role:
-            message.role === "prospect_reply"
-              ? ("reply" as const)
-              : message.role === "ai_reply"
-                ? ("follow-up" as const)
-                : ("outbound" as const),
-          content: message.content,
-          timestamp: message.createdAt.toISOString(),
-          rating: message.rating ?? undefined,
-          isFavourite: message.isFavorite,
-        })),
-      };
+      return mapConversation(conversation, messages);
     }),
 
   generateMessage: protectedProcedure
@@ -101,34 +268,16 @@ export const outreachRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const [[offering], [prospect]] = await Promise.all([
-        db
-          .select()
-          .from(offerings)
-          .where(
-            and(
-              eq(offerings.id, input.offeringId),
-              eq(offerings.userId, ctx.user.id),
-            ),
-          )
-          .limit(1),
-        db
-          .select()
-          .from(prospects)
-          .where(
-            and(
-              eq(prospects.id, input.prospectId),
-              eq(prospects.userId, ctx.user.id),
-            ),
-          )
-          .limit(1),
-      ]);
+      const { offering, prospect } = await getOfferingAndProspectForUser(
+        ctx.user.id,
+        input.offeringId,
+        input.prospectId,
+      );
 
       if (!offering || !prospect) {
         throw notFound("Selected offering or prospect was not found.");
       }
 
-      // Check if a conversation already exists for this user + offering + prospect
       const [existingConversation] = await db
         .select()
         .from(conversations)
@@ -141,56 +290,14 @@ export const outreachRouter = router({
         )
         .limit(1);
 
-      // Try to find a custom prompt first, fall back to default
-      let prompt = await db
-        .select()
-        .from(prompts)
-        .where(
-          and(
-            eq(prompts.userId, ctx.user.id),
-            eq(prompts.offeringId, input.offeringId),
-            eq(prompts.prospectId, input.prospectId),
-          ),
-        )
-        .limit(1)
-        .then((res) => res[0]);
-
-      if (!prompt) {
-        prompt = await getDefaultPromptForUser(ctx.user.id);
-      }
-
-      const content = await completeWithOpenRouter([
-        {
-          role: "system",
-          content: prompt.systemPrompt,
-        },
-        {
-          role: "user",
-          content: [
-            "Generate one personalized outbound message.",
-            "",
-            "Offering:",
-            `Name: ${offering.name}`,
-            `Website: ${offering.websiteUrl ?? "not provided"}`,
-            `Context: ${offering.aiSummary || offering.manualContext}`,
-            `Target customers: ${offering.targetCustomers ?? "not specified"}`,
-            `Proof points: ${offering.proofPoints.join("; ") || "not provided"}`,
-            `Positioning: ${offering.positioning ?? "not provided"}`,
-            promptPreferences(prompt)
-              ? `Prompt preferences:\n${promptPreferences(prompt)}`
-              : "Prompt preferences: use the saved system prompt.",
-            "",
-            "Prospect:",
-            `Name: ${prospect.name}`,
-            `Role: ${prospect.role ?? "not specified"}`,
-            `Company: ${prospect.company ?? "not specified"}`,
-            `Context: ${prospect.aiProfileSummary || prospect.manualContext || "not provided"}`,
-            `Tags: ${prospect.tags.join(", ") || "none"}`,
-            "",
-            "Return only the message text.",
-          ].join("\n"),
-        },
-      ]);
+      const prompt = await getPromptForContext(
+        ctx.user.id,
+        input.offeringId,
+        input.prospectId,
+      );
+      const content = await completeWithOpenRouter(
+        buildOutboundPrompt(offering, prospect, prompt),
+      );
 
       const generatedMessageId = crypto.randomUUID();
       const newConversationId = crypto.randomUUID();
@@ -251,31 +358,17 @@ export const outreachRouter = router({
       });
 
       const conversationId = existingConversation?.id || newConversationId;
-      const allMessages = await db
-        .select()
-        .from(conversationMessages)
-        .where(eq(conversationMessages.conversationId, conversationId))
-        .orderBy(asc(conversationMessages.createdAt));
+      const allMessages = await getConversationMessages(conversationId);
 
-      return {
-        id: conversationId,
-        offeringId: offering.id,
-        prospectId: prospect.id,
-        createdAt: (existingConversation?.createdAt || now).toISOString(),
-        messages: allMessages.map((message) => ({
-          id: message.id,
-          role:
-            message.role === "prospect_reply"
-              ? ("reply" as const)
-              : message.role === "ai_reply"
-                ? ("follow-up" as const)
-                : ("outbound" as const),
-          content: message.content,
-          timestamp: message.createdAt.toISOString(),
-          rating: message.rating ?? undefined,
-          isFavourite: message.isFavorite,
-        })),
-      };
+      return mapConversation(
+        {
+          id: conversationId,
+          offeringId: offering.id,
+          prospectId: prospect.id,
+          createdAt: existingConversation?.createdAt || now,
+        },
+        allMessages,
+      );
     }),
 
   saveReply: protectedProcedure
@@ -286,16 +379,10 @@ export const outreachRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const [conversation] = await db
-        .select()
-        .from(conversations)
-        .where(
-          and(
-            eq(conversations.id, input.conversationId),
-            eq(conversations.userId, ctx.user.id),
-          ),
-        )
-        .limit(1);
+      const conversation = await getConversationForUser(
+        ctx.user.id,
+        input.conversationId,
+      );
 
       if (!conversation) {
         throw notFound("Conversation was not found.");
@@ -316,16 +403,16 @@ export const outreachRouter = router({
       await db
         .update(conversations)
         .set({ updatedAt: now })
-        .where(
-          and(eq(conversations.id, conversation.id), eq(conversations.userId, ctx.user.id)),
-        );
+        .where(userConversationWhere(ctx.user.id, conversation.id));
 
-      return {
+      return mapConversationMessage({
         id,
-        role: "reply" as const,
+        role: "prospect_reply",
         content: input.content,
-        timestamp: now.toISOString(),
-      };
+        createdAt: now,
+        rating: null,
+        isFavorite: false,
+      });
     }),
 
   generateFollowUp: protectedProcedure
@@ -336,70 +423,29 @@ export const outreachRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const [conversation] = await db
-        .select()
-        .from(conversations)
-        .where(
-          and(
-            eq(conversations.id, input.conversationId),
-            eq(conversations.userId, ctx.user.id),
-          ),
-        )
-        .limit(1);
+      const conversation = await getConversationForUser(
+        ctx.user.id,
+        input.conversationId,
+      );
 
       if (!conversation) {
         throw notFound("Conversation was not found.");
       }
 
-      const [[offering], [prospect], thread] = await Promise.all([
-        db
-          .select()
-          .from(offerings)
-          .where(
-            and(
-              eq(offerings.id, conversation.offeringId),
-              eq(offerings.userId, ctx.user.id),
-            ),
-          )
-          .limit(1),
-        db
-          .select()
-          .from(prospects)
-          .where(
-            and(
-              eq(prospects.id, conversation.prospectId),
-              eq(prospects.userId, ctx.user.id),
-            ),
-          )
-          .limit(1),
-        db
-          .select()
-          .from(conversationMessages)
-          .where(eq(conversationMessages.conversationId, conversation.id))
-          .orderBy(asc(conversationMessages.createdAt)),
-      ]);
+      const { offering, prospect, thread } = await getConversationContext(
+        ctx.user.id,
+        conversation,
+      );
 
       if (!offering || !prospect) {
         throw notFound("Conversation context is incomplete.");
       }
 
-      // Try to load custom prompt, otherwise fall back to default
-      let prompt = await db
-        .select()
-        .from(prompts)
-        .where(
-          and(
-            eq(prompts.userId, ctx.user.id),
-            eq(prompts.offeringId, conversation.offeringId),
-            eq(prompts.prospectId, conversation.prospectId),
-          ),
-        )
-        .limit(1)
-        .then((res) => res[0]);
-
-      if (!prompt) {
-        prompt = await getDefaultPromptForUser(ctx.user.id);
-      }
+      const prompt = await getPromptForContext(
+        ctx.user.id,
+        conversation.offeringId,
+        conversation.prospectId,
+      );
 
       let threadForPrompt = thread;
       let pendingReply:
@@ -442,44 +488,9 @@ export const outreachRouter = router({
         ];
       }
 
-      const content = await completeWithOpenRouter([
-        {
-          role: "system",
-          content: [
-            prompt.systemPrompt,
-            "",
-            "You are now writing a follow-up reply in an existing conversation. Do not restart the cold outreach. Answer the prospect's latest question directly, preserve the same tone, and keep the conversation moving with one soft next step.",
-          ].join("\n"),
-        },
-        {
-          role: "user",
-          content: [
-            "Generate one natural follow-up reply.",
-            "",
-            "Offering:",
-            `Name: ${offering.name}`,
-            `Context: ${offering.aiSummary || offering.manualContext}`,
-            `Positioning: ${offering.positioning ?? "not provided"}`,
-            promptPreferences(prompt)
-              ? `Prompt preferences:\n${promptPreferences(prompt)}`
-              : "Prompt preferences: use the saved system prompt.",
-            "",
-            "Prospect:",
-            `Name: ${prospect.name}`,
-            `Role: ${prospect.role ?? "not specified"}`,
-            `Company: ${prospect.company ?? "not specified"}`,
-            `Context: ${prospect.aiProfileSummary || prospect.manualContext || "not provided"}`,
-            "",
-            "Conversation so far:",
-            ...threadForPrompt.map(
-              (message) =>
-                `${message.role === "prospect_reply" ? "Prospect" : "You"}: ${message.content}`,
-            ),
-            "",
-            "Return only the follow-up reply text.",
-          ].join("\n"),
-        },
-      ]);
+      const content = await completeWithOpenRouter(
+        buildFollowUpPrompt(offering, prospect, prompt, threadForPrompt),
+      );
 
       const id = crypto.randomUUID();
       const generatedMessageId = crypto.randomUUID();
@@ -520,18 +531,17 @@ export const outreachRouter = router({
         await tx
           .update(conversations)
           .set({ updatedAt: now })
-          .where(
-            and(eq(conversations.id, conversation.id), eq(conversations.userId, ctx.user.id)),
-          );
+          .where(userConversationWhere(ctx.user.id, conversation.id));
       });
 
-      return {
+      return mapConversationMessage({
         id,
-        role: "follow-up" as const,
+        role: "ai_reply",
         content,
-        timestamp: now.toISOString(),
-        isFavourite: false,
-      };
+        createdAt: now,
+        rating: null,
+        isFavorite: false,
+      });
     }),
 
   saveReplyAndGenerateFollowUp: protectedProcedure
@@ -542,70 +552,29 @@ export const outreachRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const [conversation] = await db
-        .select()
-        .from(conversations)
-        .where(
-          and(
-            eq(conversations.id, input.conversationId),
-            eq(conversations.userId, ctx.user.id),
-          ),
-        )
-        .limit(1);
+      const conversation = await getConversationForUser(
+        ctx.user.id,
+        input.conversationId,
+      );
 
       if (!conversation) {
         throw notFound("Conversation was not found.");
       }
 
-      const [[offering], [prospect], thread] = await Promise.all([
-        db
-          .select()
-          .from(offerings)
-          .where(
-            and(
-              eq(offerings.id, conversation.offeringId),
-              eq(offerings.userId, ctx.user.id),
-            ),
-          )
-          .limit(1),
-        db
-          .select()
-          .from(prospects)
-          .where(
-            and(
-              eq(prospects.id, conversation.prospectId),
-              eq(prospects.userId, ctx.user.id),
-            ),
-          )
-          .limit(1),
-        db
-          .select()
-          .from(conversationMessages)
-          .where(eq(conversationMessages.conversationId, conversation.id))
-          .orderBy(asc(conversationMessages.createdAt)),
-      ]);
+      const { offering, prospect, thread } = await getConversationContext(
+        ctx.user.id,
+        conversation,
+      );
 
       if (!offering || !prospect) {
         throw notFound("Conversation context is incomplete.");
       }
 
-      // Try to load custom prompt, otherwise fall back to default
-      let prompt = await db
-        .select()
-        .from(prompts)
-        .where(
-          and(
-            eq(prompts.userId, ctx.user.id),
-            eq(prompts.offeringId, conversation.offeringId),
-            eq(prompts.prospectId, conversation.prospectId),
-          ),
-        )
-        .limit(1)
-        .then((res) => res[0]);
-
-      if (!prompt) {
-        prompt = await getDefaultPromptForUser(ctx.user.id);
-      }
+      const prompt = await getPromptForContext(
+        ctx.user.id,
+        conversation.offeringId,
+        conversation.prospectId,
+      );
 
       const replyId = crypto.randomUUID();
       const replyNow = new Date();
@@ -624,44 +593,9 @@ export const outreachRouter = router({
 
       const threadForPrompt = [...thread, replyMsgObj];
 
-      const followUpContent = await completeWithOpenRouter([
-        {
-          role: "system",
-          content: [
-            prompt.systemPrompt,
-            "",
-            "You are now writing a follow-up reply in an existing conversation. Do not restart the cold outreach. Answer the prospect's latest question directly, preserve the same tone, and keep the conversation moving with one soft next step.",
-          ].join("\n"),
-        },
-        {
-          role: "user",
-          content: [
-            "Generate one natural follow-up reply.",
-            "",
-            "Offering:",
-            `Name: ${offering.name}`,
-            `Context: ${offering.aiSummary || offering.manualContext}`,
-            `Positioning: ${offering.positioning ?? "not provided"}`,
-            promptPreferences(prompt)
-              ? `Prompt preferences:\n${promptPreferences(prompt)}`
-              : "Prompt preferences: use the saved system prompt.",
-            "",
-            "Prospect:",
-            `Name: ${prospect.name}`,
-            `Role: ${prospect.role ?? "not specified"}`,
-            `Company: ${prospect.company ?? "not specified"}`,
-            `Context: ${prospect.aiProfileSummary || prospect.manualContext || "not provided"}`,
-            "",
-            "Conversation so far:",
-            ...threadForPrompt.map(
-              (message) =>
-                `${message.role === "prospect_reply" ? "Prospect" : "You"}: ${message.content}`,
-            ),
-            "",
-            "Return only the follow-up reply text.",
-          ].join("\n"),
-        },
-      ]);
+      const followUpContent = await completeWithOpenRouter(
+        buildFollowUpPrompt(offering, prospect, prompt, threadForPrompt),
+      );
 
       const followUpId = crypto.randomUUID();
       const generatedMessageId = crypto.randomUUID();
@@ -700,41 +634,33 @@ export const outreachRouter = router({
         await tx
           .update(conversations)
           .set({ updatedAt: followUpNow })
-          .where(
-            and(eq(conversations.id, conversation.id), eq(conversations.userId, ctx.user.id)),
-          );
+          .where(userConversationWhere(ctx.user.id, conversation.id));
       });
 
       return {
-        reply: {
+        reply: mapConversationMessage({
           id: replyId,
-          role: "reply" as const,
+          role: "prospect_reply",
           content: input.content,
-          timestamp: replyNow.toISOString(),
-        },
-        followUp: {
+          createdAt: replyNow,
+          rating: null,
+          isFavorite: false,
+        }),
+        followUp: mapConversationMessage({
           id: followUpId,
-          role: "follow-up" as const,
+          role: "ai_reply",
           content: followUpContent,
-          timestamp: followUpNow.toISOString(),
-          isFavourite: false,
-        },
+          createdAt: followUpNow,
+          rating: null,
+          isFavorite: false,
+        }),
       };
     }),
 
   toggleFavoriteMessage: protectedProcedure
     .input(z.object({ messageId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const [msg] = await db
-        .select()
-        .from(conversationMessages)
-        .where(
-          and(
-            eq(conversationMessages.id, input.messageId),
-            eq(conversationMessages.userId, ctx.user.id),
-          ),
-        )
-        .limit(1);
+      const msg = await getMessageForUser(ctx.user.id, input.messageId);
 
       if (!msg) {
         throw notFound("Message not found.");
@@ -746,12 +672,7 @@ export const outreachRouter = router({
         await tx
           .update(conversationMessages)
           .set({ isFavorite: nextVal })
-          .where(
-            and(
-              eq(conversationMessages.id, input.messageId),
-              eq(conversationMessages.userId, ctx.user.id),
-            ),
-          );
+          .where(userMessageWhere(ctx.user.id, input.messageId));
 
         if (msg.generatedMessageId) {
           await tx
@@ -777,16 +698,7 @@ export const outreachRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const [msg] = await db
-        .select()
-        .from(conversationMessages)
-        .where(
-          and(
-            eq(conversationMessages.id, input.messageId),
-            eq(conversationMessages.userId, ctx.user.id),
-          ),
-        )
-        .limit(1);
+      const msg = await getMessageForUser(ctx.user.id, input.messageId);
 
       if (!msg) {
         throw notFound("Message not found.");
@@ -796,12 +708,7 @@ export const outreachRouter = router({
         await tx
           .update(conversationMessages)
           .set({ rating: input.rating })
-          .where(
-            and(
-              eq(conversationMessages.id, input.messageId),
-              eq(conversationMessages.userId, ctx.user.id),
-            ),
-          );
+          .where(userMessageWhere(ctx.user.id, input.messageId));
 
         if (msg.generatedMessageId) {
           await tx
@@ -822,16 +729,7 @@ export const outreachRouter = router({
   deleteMessage: protectedProcedure
     .input(z.object({ messageId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const [msg] = await db
-        .select()
-        .from(conversationMessages)
-        .where(
-          and(
-            eq(conversationMessages.id, input.messageId),
-            eq(conversationMessages.userId, ctx.user.id),
-          ),
-        )
-        .limit(1);
+      const msg = await getMessageForUser(ctx.user.id, input.messageId);
 
       if (!msg) {
         throw notFound("Message not found.");
@@ -840,12 +738,7 @@ export const outreachRouter = router({
       await db.transaction(async (tx) => {
         await tx
           .delete(conversationMessages)
-          .where(
-            and(
-              eq(conversationMessages.id, input.messageId),
-              eq(conversationMessages.userId, ctx.user.id),
-            ),
-          );
+          .where(userMessageWhere(ctx.user.id, input.messageId));
 
         if (msg.generatedMessageId) {
           await tx
@@ -865,16 +758,7 @@ export const outreachRouter = router({
   regenerateMessage: protectedProcedure
     .input(z.object({ messageId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const [msg] = await db
-        .select()
-        .from(conversationMessages)
-        .where(
-          and(
-            eq(conversationMessages.id, input.messageId),
-            eq(conversationMessages.userId, ctx.user.id),
-          ),
-        )
-        .limit(1);
+      const msg = await getMessageForUser(ctx.user.id, input.messageId);
 
       if (!msg) {
         throw notFound("Message not found.");
@@ -884,102 +768,37 @@ export const outreachRouter = router({
         throw badRequest("Only AI-generated messages can be regenerated.");
       }
 
-      const [conversation] = await db
-        .select()
-        .from(conversations)
-        .where(
-          and(
-            eq(conversations.id, msg.conversationId),
-            eq(conversations.userId, ctx.user.id),
-          ),
-        )
-        .limit(1);
+      const conversation = await getConversationForUser(
+        ctx.user.id,
+        msg.conversationId,
+      );
 
       if (!conversation) {
         throw notFound("Conversation not found.");
       }
 
-      const [[offering], [prospect]] = await Promise.all([
-        db
-          .select()
-          .from(offerings)
-          .where(
-            and(
-              eq(offerings.id, conversation.offeringId),
-              eq(offerings.userId, ctx.user.id),
-            ),
-          )
-          .limit(1),
-        db
-          .select()
-          .from(prospects)
-          .where(
-            and(
-              eq(prospects.id, conversation.prospectId),
-              eq(prospects.userId, ctx.user.id),
-            ),
-          )
-          .limit(1),
-      ]);
+      const { offering, prospect } = await getOfferingAndProspectForUser(
+        ctx.user.id,
+        conversation.offeringId,
+        conversation.prospectId,
+      );
 
       if (!offering || !prospect) {
         throw notFound("Conversation context is incomplete.");
       }
 
-      // Try to load custom prompt first, fallback to default
-      let prompt = await db
-        .select()
-        .from(prompts)
-        .where(
-          and(
-            eq(prompts.userId, ctx.user.id),
-            eq(prompts.offeringId, conversation.offeringId),
-            eq(prompts.prospectId, conversation.prospectId),
-          ),
-        )
-        .limit(1)
-        .then((res) => res[0]);
-
-      if (!prompt) {
-        prompt = await getDefaultPromptForUser(ctx.user.id);
-      }
+      const prompt = await getPromptForContext(
+        ctx.user.id,
+        conversation.offeringId,
+        conversation.prospectId,
+      );
 
       let content = "";
       if (msg.role === "outbound") {
-        content = await completeWithOpenRouter([
-          {
-            role: "system",
-            content: prompt.systemPrompt,
-          },
-          {
-            role: "user",
-            content: [
-              "Generate one personalized outbound message.",
-              "",
-              "Offering:",
-              `Name: ${offering.name}`,
-              `Website: ${offering.websiteUrl ?? "not provided"}`,
-              `Context: ${offering.aiSummary || offering.manualContext}`,
-              `Target customers: ${offering.targetCustomers ?? "not specified"}`,
-              `Proof points: ${offering.proofPoints.join("; ") || "not provided"}`,
-              `Positioning: ${offering.positioning ?? "not provided"}`,
-              promptPreferences(prompt)
-                ? `Prompt preferences:\n${promptPreferences(prompt)}`
-                : "Prompt preferences: use the saved system prompt.",
-              "",
-              "Prospect:",
-              `Name: ${prospect.name}`,
-              `Role: ${prospect.role ?? "not specified"}`,
-              `Company: ${prospect.company ?? "not specified"}`,
-              `Context: ${prospect.aiProfileSummary || prospect.manualContext || "not provided"}`,
-              `Tags: ${prospect.tags.join(", ") || "none"}`,
-              "",
-              "Return only the message text.",
-            ].join("\n"),
-          },
-        ]);
+        content = await completeWithOpenRouter(
+          buildOutboundPrompt(offering, prospect, prompt),
+        );
       } else {
-        // AI follow-up regeneration: load the thread BEFORE this message
         const prevMessages = await db
           .select()
           .from(conversationMessages)
@@ -991,56 +810,16 @@ export const outreachRouter = router({
           )
           .orderBy(asc(conversationMessages.createdAt));
 
-        content = await completeWithOpenRouter([
-          {
-            role: "system",
-            content: [
-              prompt.systemPrompt,
-              "",
-              "You are now writing a follow-up reply in an existing conversation. Do not restart the cold outreach. Answer the prospect's latest question directly, preserve the same tone, and keep the conversation moving with one soft next step.",
-          ].join("\n"),
-          },
-          {
-            role: "user",
-            content: [
-              "Generate one natural follow-up reply.",
-              "",
-              "Offering:",
-              `Name: ${offering.name}`,
-              `Context: ${offering.aiSummary || offering.manualContext}`,
-              `Positioning: ${offering.positioning ?? "not provided"}`,
-              promptPreferences(prompt)
-                ? `Prompt preferences:\n${promptPreferences(prompt)}`
-                : "Prompt preferences: use the saved system prompt.",
-              "",
-              "Prospect:",
-              `Name: ${prospect.name}`,
-              `Role: ${prospect.role ?? "not specified"}`,
-              `Company: ${prospect.company ?? "not specified"}`,
-              `Context: ${prospect.aiProfileSummary || prospect.manualContext || "not provided"}`,
-              "",
-              "Conversation so far:",
-              ...prevMessages.map(
-                (message) =>
-                  `${message.role === "prospect_reply" ? "Prospect" : "You"}: ${message.content}`,
-              ),
-              "",
-              "Return only the follow-up reply text.",
-            ].join("\n"),
-          },
-        ]);
+        content = await completeWithOpenRouter(
+          buildFollowUpPrompt(offering, prospect, prompt, prevMessages),
+        );
       }
 
       await db.transaction(async (tx) => {
         await tx
           .update(conversationMessages)
           .set({ content })
-          .where(
-            and(
-              eq(conversationMessages.id, input.messageId),
-              eq(conversationMessages.userId, ctx.user.id),
-            ),
-          );
+          .where(userMessageWhere(ctx.user.id, input.messageId));
 
         if (msg.generatedMessageId) {
           await tx
@@ -1055,16 +834,6 @@ export const outreachRouter = router({
         }
       });
 
-      return {
-        id: msg.id,
-        role:
-          msg.role === "ai_reply"
-            ? ("follow-up" as const)
-            : ("outbound" as const),
-        content,
-        timestamp: msg.createdAt.toISOString(),
-        rating: msg.rating ?? undefined,
-        isFavourite: msg.isFavorite,
-      };
+      return mapConversationMessage({ ...msg, content });
     }),
 });
