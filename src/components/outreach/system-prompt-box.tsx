@@ -7,8 +7,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Wand2 } from "lucide-react";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useRef } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,7 @@ type SystemPromptBoxProps = {
 
 export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps) {
   const utils = trpc.useUtils();
+  const lastHydratedPromptKey = useRef<string | null>(null);
 
   const defaultPrompt = trpc.prompts.default.useQuery();
   const contextPrompt = trpc.prompts.getByContext.useQuery(
@@ -51,6 +52,11 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
   );
   const promptData = contextPrompt.data ?? defaultPrompt.data;
   const promptError = contextPrompt.error ?? defaultPrompt.error;
+  const promptKey = [
+    offeringId || "default",
+    prospectId || "default",
+    promptData?.id || "built-in",
+  ].join(":");
 
   const form = useForm<PromptFormValues>({
     resolver: zodResolver(promptSchema),
@@ -59,8 +65,10 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
 
   const updateDefaultPrompt = trpc.prompts.updateDefault.useMutation({
     onSuccess: async (data) => {
+      lastHydratedPromptKey.current = promptKey;
+      utils.prompts.default.setData(undefined, data);
       form.reset({ ...DEFAULT_PROMPT_VALUES, ...data });
-      await defaultPrompt.refetch();
+      await utils.prompts.default.invalidate();
       toast.success("Prompt saved.");
     },
     onError: (error) => {
@@ -73,6 +81,7 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
   const savePrompt = trpc.prompts.saveForContext.useMutation({
     onSuccess: async (data) => {
       utils.prompts.getByContext.setData({ offeringId, prospectId }, data);
+      lastHydratedPromptKey.current = promptKey;
       form.reset({ ...DEFAULT_PROMPT_VALUES, ...data });
       await utils.prompts.getByContext.invalidate({ offeringId, prospectId });
       toast.success("Prompt saved.");
@@ -102,10 +111,11 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
   });
 
   useEffect(() => {
-    if (promptData) {
+    if (promptData && lastHydratedPromptKey.current !== promptKey) {
+      lastHydratedPromptKey.current = promptKey;
       form.reset({ ...DEFAULT_PROMPT_VALUES, ...promptData });
     }
-  }, [form, promptData]);
+  }, [form, promptData, promptKey]);
 
   function handleImprove() {
     const currentInstructions = form.getValues("systemPrompt");
@@ -192,11 +202,20 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
             <Label htmlFor="prompt-name" className="text-xs">
               Prompt name
             </Label>
-            <Input
-              id="prompt-name"
-              placeholder="Default outreach prompt"
-              aria-invalid={Boolean(form.formState.errors.name)}
-              {...form.register("name")}
+            <Controller
+              name="name"
+              control={form.control}
+              render={({ field }) => (
+                <Input
+                  id="prompt-name"
+                  placeholder="Default outreach prompt"
+                  aria-invalid={Boolean(form.formState.errors.name)}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                />
+              )}
             />
             {form.formState.errors.name && (
               <p className="text-xs text-destructive">
@@ -210,20 +229,38 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
               <Label htmlFor="prompt-tone" className="text-xs">
                 Tone
               </Label>
-              <Input
-                id="prompt-tone"
-                placeholder="Conversational, direct"
-                {...form.register("tone")}
+              <Controller
+                name="tone"
+                control={form.control}
+                render={({ field }) => (
+                  <Input
+                    id="prompt-tone"
+                    placeholder="Conversational, direct"
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                  />
+                )}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="prompt-length" className="text-xs">
                 Length
               </Label>
-              <Input
-                id="prompt-length"
-                placeholder="Under 100 words"
-                {...form.register("lengthPreference")}
+              <Controller
+                name="lengthPreference"
+                control={form.control}
+                render={({ field }) => (
+                  <Input
+                    id="prompt-length"
+                    placeholder="Under 100 words"
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                  />
+                )}
               />
             </div>
           </div>
@@ -232,11 +269,20 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
             <Label htmlFor="prompt-avoid" className="text-xs">
               Avoid
             </Label>
-            <Textarea
-              id="prompt-avoid"
-              placeholder="Generic compliments, salesy language, hard asks"
-              rows={2}
-              {...form.register("avoidList")}
+            <Controller
+              name="avoidList"
+              control={form.control}
+              render={({ field }) => (
+                <Textarea
+                  id="prompt-avoid"
+                  placeholder="Generic compliments, salesy language, hard asks"
+                  rows={2}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                />
+              )}
             />
           </div>
 
@@ -244,12 +290,21 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
             <Label htmlFor="system-prompt" className="text-xs">
               Instructions
             </Label>
-            <Textarea
-              id="system-prompt"
-              rows={7}
-              className="text-sm"
-              aria-invalid={Boolean(form.formState.errors.systemPrompt)}
-              {...form.register("systemPrompt")}
+            <Controller
+              name="systemPrompt"
+              control={form.control}
+              render={({ field }) => (
+                <Textarea
+                  id="system-prompt"
+                  rows={7}
+                  className="text-sm"
+                  aria-invalid={Boolean(form.formState.errors.systemPrompt)}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                />
+              )}
             />
             {form.formState.errors.systemPrompt && (
               <p className="text-xs text-destructive">
