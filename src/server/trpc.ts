@@ -1,3 +1,8 @@
+/*
+ * Shared tRPC setup for the server API layer.
+ * Builds request context from the Better Auth session and defines public and
+ * protected procedures so product data can require an authenticated user.
+ */
 import { initTRPC, TRPCError } from "@trpc/server";
 import { auth } from "@/lib/auth";
 

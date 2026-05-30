@@ -1,3 +1,8 @@
+/*
+ * Firecrawl website scraping helper.
+ * Normalizes user-provided URLs and fetches main-page markdown content for
+ * offering ingestion and prospect source extraction.
+ */
 type FirecrawlScrapeResponse = {
   success?: boolean;
   data?: {

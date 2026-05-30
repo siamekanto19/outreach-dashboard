@@ -1,3 +1,8 @@
+/*
+ * Outreach tRPC router.
+ * Owns message generation, conversation retrieval, reply handling, follow-up
+ * generation, ratings, favorites, deletion, and regeneration for saved threads.
+ */
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, lt } from "drizzle-orm";
 import { z } from "zod";

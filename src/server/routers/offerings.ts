@@ -1,3 +1,8 @@
+/*
+ * Offerings tRPC router.
+ * Handles user-scoped offering listing, creation, website scraping, AI
+ * extraction, and edits for the value proposition used in outreach generation.
+ */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";

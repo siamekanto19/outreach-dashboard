@@ -1,3 +1,8 @@
+/*
+ * Server-only authentication helpers for App Router code.
+ * Reads the Better Auth session from request headers and exposes a small
+ * guard for pages or layouts that must redirect anonymous users to sign in.
+ */
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";

@@ -1,3 +1,8 @@
+/*
+ * OpenRouter integration for all server-side AI calls.
+ * Wraps chat completions, optional JSON responses, and image-aware prompts so
+ * routers can generate outreach copy and extract structured context safely.
+ */
 type TextContent = {
   type: "text";
   text: string;

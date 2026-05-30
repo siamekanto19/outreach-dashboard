@@ -1,3 +1,8 @@
+/*
+ * Prompt customization tRPC router.
+ * Loads default or context-specific prompts, saves prompt edits, and uses AI to
+ * improve system instructions for higher-quality personalized outreach.
+ */
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";

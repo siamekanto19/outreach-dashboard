@@ -1,3 +1,8 @@
+/*
+ * Root tRPC application router.
+ * Collects every feature router into the single API surface that the Next.js
+ * route handler and client-side tRPC hooks use throughout the app.
+ */
 import { dashboardRouter } from "@/server/routers/dashboard";
 import { offeringsRouter } from "@/server/routers/offerings";
 import { outreachRouter } from "@/server/routers/outreach";

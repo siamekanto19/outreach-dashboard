@@ -1,3 +1,8 @@
+/*
+ * Prompt defaults and lookup helpers.
+ * Ensures every user has a usable default outreach system prompt before they
+ * customize prompts for specific offering/prospect contexts.
+ */
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { prompts } from "@/db/schema";

@@ -1,3 +1,8 @@
+/*
+ * Database-to-UI mapping utilities.
+ * Converts raw Drizzle rows into the stable client-facing shapes used by
+ * offerings, prospects, and empty conversation states.
+ */
 import { Conversation } from "@/types/outreach";
 import { Offering } from "@/types/offering";
 import { Prospect } from "@/types/prospect";

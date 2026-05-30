@@ -1,3 +1,8 @@
+/*
+ * Offering query helpers.
+ * Loads the authenticated user's offerings in display order and maps database
+ * rows into the UI-friendly offering type.
+ */
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { offerings } from "@/db/schema";

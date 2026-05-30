@@ -1,3 +1,8 @@
+/*
+ * Prospect query helpers.
+ * Loads user-owned prospects with their saved source labels and maps them into
+ * the shape consumed by the prospects table and outreach selector.
+ */
 import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { prospectSources, prospects } from "@/db/schema";

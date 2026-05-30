@@ -1,3 +1,8 @@
+/*
+ * Analytics read model for the dashboard overview.
+ * Aggregates user-scoped counts, recent activity, top offering usage, and
+ * latest conversation summaries from the database.
+ */
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {

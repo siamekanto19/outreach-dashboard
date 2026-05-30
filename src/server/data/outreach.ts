@@ -1,3 +1,8 @@
+/*
+ * Outreach conversation query helpers.
+ * Fetches the latest conversation and compact conversation summaries used by
+ * the outreach workspace and analytics dashboard.
+ */
 import { asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {

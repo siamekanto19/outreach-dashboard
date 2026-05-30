@@ -1,3 +1,8 @@
+/*
+ * Server-side formatting helpers used by data mappers and analytics.
+ * Keeps date and relative-time display logic consistent before values are
+ * returned to dashboard components.
+ */
 export function formatDate(value: Date | string | null | undefined) {
   if (!value) {
     return "Not set";

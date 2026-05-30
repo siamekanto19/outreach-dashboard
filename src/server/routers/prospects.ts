@@ -1,3 +1,8 @@
+/*
+ * Prospects tRPC router.
+ * Creates and updates user-owned prospects from flexible manual, URL, and
+ * screenshot inputs while extracting useful AI context for outreach generation.
+ */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
