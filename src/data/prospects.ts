@@ -1,0 +1,49 @@
+import { Prospect } from "@/types/prospect";
+
+export const dummyProspects: Prospect[] = [
+  {
+    id: "1",
+    name: "Sarah Chen",
+    company: "Acme SaaS",
+    role: "Sales Engineer",
+    sources: ["LinkedIn", "GitHub", "Portfolio", "Company"],
+    tags: ["Technical", "Mid-market", "Active"],
+    createdAt: "2024-03-01",
+  },
+  {
+    id: "2",
+    name: "Marcus Rivera",
+    company: "TechFlow",
+    role: "Head of Growth",
+    sources: ["LinkedIn", "Company"],
+    tags: ["Growth", "Enterprise", "Decision Maker"],
+    createdAt: "2024-03-05",
+  },
+  {
+    id: "3",
+    name: "Priya Sharma",
+    company: "DataStack",
+    role: "Founder",
+    sources: ["GitHub", "Personal Site"],
+    tags: ["Founder", "Technical", "Startup"],
+    createdAt: "2024-03-08",
+  },
+  {
+    id: "4",
+    name: "James Liu",
+    company: "SalesMotion",
+    role: "VP Sales",
+    sources: ["LinkedIn", "Company", "Twitter"],
+    tags: ["Sales Leader", "Enterprise"],
+    createdAt: "2024-03-10",
+  },
+  {
+    id: "5",
+    name: "Elena Vasquez",
+    company: "GrowthPilot",
+    role: "Revenue Operations Manager",
+    sources: ["LinkedIn", "GitHub"],
+    tags: ["RevOps", "Mid-market", "Active"],
+    createdAt: "2024-03-12",
+  },
+];
