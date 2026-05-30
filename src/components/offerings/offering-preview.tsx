@@ -15,7 +15,7 @@ export function OfferingPreview({ offering }: OfferingPreviewProps) {
           <CardTitle className="text-base font-semibold">Preview</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             Save an offering to see how it will be used for message generation.
           </p>
         </CardContent>
@@ -30,29 +30,29 @@ export function OfferingPreview({ offering }: OfferingPreviewProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Name
           </p>
-          <p className="mt-1 text-sm text-zinc-900">{offering.name}</p>
+          <p className="mt-1 text-sm text-foreground">{offering.name}</p>
         </div>
         <Separator />
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Context
           </p>
-          <p className="mt-1 text-sm text-zinc-700 leading-relaxed">
+          <p className="mt-1 text-sm text-foreground leading-relaxed">
             {offering.context}
           </p>
         </div>
         <Separator />
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Proof Points
           </p>
           <ul className="mt-1.5 space-y-1">
             {offering.proofPoints.map((point, i) => (
-              <li key={i} className="text-sm text-zinc-600 flex items-start gap-2">
-                <span className="text-zinc-300 mt-0.5">•</span>
+              <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                <span className="text-muted-foreground mt-0.5">•</span>
                 {point}
               </li>
             ))}
@@ -60,7 +60,7 @@ export function OfferingPreview({ offering }: OfferingPreviewProps) {
         </div>
         <Separator />
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Target Audience
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">

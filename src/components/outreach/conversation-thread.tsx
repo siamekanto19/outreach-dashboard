@@ -15,7 +15,7 @@ export function ConversationThread({ messages }: ConversationThreadProps) {
             <MessageCard key={message.id} message={message} />
           ))
         ) : (
-          <div className="rounded-lg border border-dashed border-zinc-200 p-6 text-sm text-zinc-500">
+          <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
             Choose an offering and prospect, then generate a message to preview
             the conversation here.
           </div>

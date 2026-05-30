@@ -48,7 +48,7 @@ export function ControlPanel({
               id="offering-select"
               value={selectedOfferingId}
               onChange={(event) => onOfferingChange(event.target.value)}
-              className="h-9 w-full rounded-lg border border-input bg-white px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="h-9 w-full rounded-lg border border-input bg-background px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <option value="">Select an offering</option>
               {offerings.map((offering) => (
@@ -64,7 +64,7 @@ export function ControlPanel({
               id="prospect-select"
               value={selectedProspectId}
               onChange={(event) => onProspectChange(event.target.value)}
-              className="h-9 w-full rounded-lg border border-input bg-white px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="h-9 w-full rounded-lg border border-input bg-background px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <option value="">Select a prospect</option>
               {prospects.map((prospect) => (

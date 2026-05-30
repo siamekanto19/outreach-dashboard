@@ -9,10 +9,10 @@ export function OfferingList({ offerings }: OfferingListProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-zinc-900">
+        <h2 className="text-sm font-semibold text-foreground">
           Saved Offerings
         </h2>
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-muted-foreground">
           {offerings.length} offering{offerings.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -22,7 +22,7 @@ export function OfferingList({ offerings }: OfferingListProps) {
             <OfferingCard key={offering.id} offering={offering} />
           ))
         ) : (
-          <div className="rounded-lg border border-dashed border-zinc-200 p-6 text-sm text-zinc-500">
+          <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
             No offerings saved yet.
           </div>
         )}

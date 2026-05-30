@@ -17,7 +17,7 @@ export function ProspectDetailCard({ prospect }: ProspectDetailCardProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             Add a prospect to see their saved sources and context.
           </p>
         </CardContent>
@@ -34,30 +34,30 @@ export function ProspectDetailCard({ prospect }: ProspectDetailCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Name
           </p>
-          <p className="mt-1 text-sm font-medium text-zinc-900">
+          <p className="mt-1 text-sm font-medium text-foreground">
             {prospect.name}
           </p>
         </div>
         <Separator />
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Company
           </p>
-          <p className="mt-1 text-sm text-zinc-700">{prospect.company}</p>
+          <p className="mt-1 text-sm text-foreground">{prospect.company}</p>
         </div>
         <Separator />
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Role
           </p>
-          <p className="mt-1 text-sm text-zinc-700">{prospect.role}</p>
+          <p className="mt-1 text-sm text-foreground">{prospect.role}</p>
         </div>
         <Separator />
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Sources
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -70,7 +70,7 @@ export function ProspectDetailCard({ prospect }: ProspectDetailCardProps) {
         </div>
         <Separator />
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Tags
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -83,10 +83,10 @@ export function ProspectDetailCard({ prospect }: ProspectDetailCardProps) {
         </div>
         <Separator />
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Added
           </p>
-          <p className="mt-1 text-xs text-zinc-500">{prospect.createdAt}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{prospect.createdAt}</p>
         </div>
       </CardContent>
     </Card>

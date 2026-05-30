@@ -19,10 +19,10 @@ export function OfferingUsageCard({ offerings }: OfferingUsageCardProps) {
           offerings.map((offering) => (
             <div key={offering.name} className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-zinc-700">
+                <span className="font-medium text-foreground">
                   {offering.name}
                 </span>
-                <span className="text-zinc-500">
+                <span className="text-muted-foreground">
                   {offering.messagesGenerated} messages
                 </span>
               </div>
@@ -30,7 +30,7 @@ export function OfferingUsageCard({ offerings }: OfferingUsageCardProps) {
             </div>
           ))
         ) : (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             Offering usage will appear after message generation.
           </p>
         )}

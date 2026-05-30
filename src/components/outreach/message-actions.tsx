@@ -59,14 +59,14 @@ export function MessageActions({ rating, isFavourite }: MessageActionsProps) {
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
-            className="p-0.5 rounded hover:bg-zinc-100 transition-colors"
+            className="p-0.5 rounded hover:bg-muted transition-colors"
           >
             <Star
               className={cn(
                 "h-3.5 w-3.5",
                 rating && star <= rating
                   ? "fill-amber-400 text-amber-400"
-                  : "text-zinc-300"
+                  : "text-muted-foreground"
               )}
             />
           </button>

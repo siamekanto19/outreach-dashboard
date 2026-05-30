@@ -94,9 +94,9 @@ export function SystemPromptBox() {
         <CardTitle className="text-sm font-semibold">System Prompt</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <Alert className="border-zinc-200 bg-zinc-50">
+        <Alert className="border-border bg-muted">
           <Info className="h-4 w-4" />
-          <AlertDescription className="text-xs text-zinc-600">
+          <AlertDescription className="text-xs text-muted-foreground">
             The prompt is the set of instructions you give the AI before it
             generates a message. It controls tone, length, angle, what to
             emphasize, and what to avoid.

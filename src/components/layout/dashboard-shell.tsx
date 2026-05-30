@@ -6,7 +6,7 @@ type DashboardShellProps = {
 
 export function DashboardShell({ children }: DashboardShellProps) {
   return (
-    <main className="ml-[260px] min-h-screen bg-zinc-50">
+    <main className="ml-[260px] min-h-screen bg-background">
       <div className="p-8">{children}</div>
     </main>
   );

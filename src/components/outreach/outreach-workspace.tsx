@@ -125,7 +125,7 @@ export function OutreachWorkspace({
         ) : (
           <Card>
             <CardContent className="py-10">
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-muted-foreground">
                 Create an offering and prospect to start generating outreach.
               </p>
             </CardContent>

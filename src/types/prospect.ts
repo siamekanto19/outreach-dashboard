@@ -5,5 +5,7 @@ export type Prospect = {
   role: string;
   sources: string[];
   tags: string[];
+  manualContext: string;
+  aiProfileSummary: string;
   createdAt: string;
 };

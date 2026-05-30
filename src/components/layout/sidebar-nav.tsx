@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BarChart3, Package, Users, Send, LogOut, Settings } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "@/lib/toast";
 import {
@@ -63,16 +64,17 @@ export function SidebarNav({ user }: SidebarNavProps) {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 flex w-[260px] flex-col border-r border-zinc-200 bg-white">
-      <div className="flex h-16 items-center border-b border-zinc-200 px-6">
+    <aside className="fixed inset-y-0 left-0 z-30 flex w-[260px] flex-col border-r border-sidebar-border bg-sidebar">
+      <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-900 text-white text-xs font-bold">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold">
             O
           </div>
-          <span className="text-sm font-semibold tracking-tight">
+          <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">
             Outreach
           </span>
         </Link>
+        <ThemeToggle />
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
@@ -86,8 +88,8 @@ export function SidebarNav({ user }: SidebarNavProps) {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "bg-zinc-100 text-zinc-900"
-                  : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -97,21 +99,21 @@ export function SidebarNav({ user }: SidebarNavProps) {
         })}
       </nav>
 
-      <div className="border-t border-zinc-200 p-3">
+      <div className="border-t border-sidebar-border p-3">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-zinc-50" />
+              <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-sidebar-accent/50" />
             }
           >
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-zinc-200 text-xs font-medium">
+              <AvatarFallback className="bg-muted text-xs font-medium">
                 {initials || user.email[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 truncate">
-              <p className="text-sm font-medium text-zinc-900">{user.name}</p>
-              <p className="text-xs text-zinc-500 truncate">
+              <p className="text-sm font-medium text-sidebar-foreground">{user.name}</p>
+              <p className="text-xs text-muted-foreground truncate">
                 {user.email}
               </p>
             </div>

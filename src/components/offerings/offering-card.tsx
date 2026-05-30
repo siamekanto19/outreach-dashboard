@@ -16,30 +16,30 @@ type OfferingCardProps = {
 
 export function OfferingCard({ offering }: OfferingCardProps) {
   return (
-    <Card className="transition-colors hover:border-zinc-300">
+    <Card className="transition-colors hover:border-border">
       <CardContent className="pt-5">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-zinc-900">
+              <h3 className="text-sm font-semibold text-foreground">
                 {offering.name}
               </h3>
               <a
                 href={`https://${offering.url}`}
-                className="text-xs text-zinc-400 hover:text-zinc-600 flex items-center gap-0.5"
+                className="text-xs text-muted-foreground hover:text-muted-foreground flex items-center gap-0.5"
               >
                 {offering.url}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
-            <p className="mt-1.5 text-sm text-zinc-600 leading-relaxed line-clamp-2">
+            <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed line-clamp-2">
               {offering.context}
             </p>
             <div className="mt-3 flex items-center gap-2">
               <Badge variant="secondary" className="text-xs">
                 {offering.targetAudience.split(",")[0].trim()}
               </Badge>
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-muted-foreground">
                 Updated {offering.updatedAt}
               </span>
             </div>

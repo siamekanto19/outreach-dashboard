@@ -41,7 +41,7 @@ export default function DashboardPage() {
           </div>
         </>
       ) : (
-        <p className="text-sm text-zinc-500">Could not load analytics.</p>
+        <p className="text-sm text-muted-foreground">Could not load analytics.</p>
       )}
     </div>
   );

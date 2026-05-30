@@ -22,6 +22,8 @@ type ProspectRow = {
   company: string | null;
   role: string | null;
   tags: string[];
+  manualContext?: string | null;
+  aiProfileSummary?: string | null;
   createdAt: Date;
   sourceTypes?: string[];
 };
@@ -48,6 +50,8 @@ export function mapProspect(row: ProspectRow): Prospect {
     role: row.role || "Not specified",
     sources: row.sourceTypes?.length ? row.sourceTypes : ["Manual"],
     tags: row.tags,
+    manualContext: row.manualContext || "",
+    aiProfileSummary: row.aiProfileSummary || "",
     createdAt: formatDate(row.createdAt),
   };
 }

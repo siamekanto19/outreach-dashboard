@@ -22,12 +22,12 @@ export function ActivityFeed({ items }: ActivityFeedProps) {
               items.map((item, index) => (
                 <div key={item.id}>
                   <div className="flex items-start gap-3 py-3">
-                    <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-zinc-300" />
+                    <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-muted-foreground" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-zinc-700 leading-snug">
+                      <p className="text-sm text-foreground leading-snug">
                         {item.action}
                       </p>
-                      <p className="mt-0.5 text-xs text-zinc-400">
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         {item.timestamp}
                       </p>
                     </div>
@@ -36,7 +36,7 @@ export function ActivityFeed({ items }: ActivityFeedProps) {
                 </div>
               ))
             ) : (
-              <p className="py-3 text-sm text-zinc-500">
+              <p className="py-3 text-sm text-muted-foreground">
                 Activity will appear as you add prospects and generate messages.
               </p>
             )}

@@ -3,8 +3,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +19,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/toast";
 import { Lightbulb } from "lucide-react";
+import { useEffect } from "react";
 
 const offeringSchema = z
   .object({
@@ -30,7 +37,12 @@ const offeringSchema = z
 
 type OfferingFormValues = z.infer<typeof offeringSchema>;
 
-export function OfferingForm() {
+type NewOfferingSheetProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+export function NewOfferingSheet({ open, onOpenChange }: NewOfferingSheetProps) {
   const utils = trpc.useUtils();
   const form = useForm<OfferingFormValues>({
     resolver: zodResolver(offeringSchema),
@@ -43,6 +55,7 @@ export function OfferingForm() {
       positioning: "",
     },
   });
+
   const createOffering = trpc.offerings.create.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -50,6 +63,7 @@ export function OfferingForm() {
         utils.dashboard.analytics.invalidate(),
       ]);
       form.reset();
+      onOpenChange(false);
       toast.success("Offering saved.");
     },
     onError: (error) => {
@@ -60,26 +74,35 @@ export function OfferingForm() {
     },
   });
 
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+    }
+  }, [open, form]);
+
   function onSubmit(values: OfferingFormValues) {
     createOffering.mutate(values);
   }
 
   return (
-    <div className="space-y-4">
-      <Alert>
-        <Lightbulb className="h-4 w-4" />
-        <AlertDescription className="text-sm text-muted-foreground">
-          Your offering is the core value you bring to a prospect. It is what
-          makes your outreach relevant to them specifically. The better your
-          offering is defined, the better every message will be.
-        </AlertDescription>
-      </Alert>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>New Offering</SheetTitle>
+          <SheetDescription>
+            Define what you offer to make outreach personalized.
+          </SheetDescription>
+        </SheetHeader>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">New Offering</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <Alert className="mb-4">
+            <Lightbulb className="h-4 w-4" />
+            <AlertDescription className="text-sm text-muted-foreground">
+              Your offering is the core value you bring to a prospect. The better
+              your offering is defined, the better every message will be.
+            </AlertDescription>
+          </Alert>
+
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="offering-name">Offering name</Label>
@@ -95,6 +118,7 @@ export function OfferingForm() {
                 </p>
               )}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="offering-url">Website URL</Label>
               <Input
@@ -107,6 +131,7 @@ export function OfferingForm() {
                 offering context.
               </p>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="offering-context">Manual context</Label>
               <Textarea
@@ -122,6 +147,7 @@ export function OfferingForm() {
                 </p>
               )}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="offering-audience">Target audience</Label>
               <Input
@@ -130,6 +156,7 @@ export function OfferingForm() {
                 {...form.register("targetCustomers")}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="offering-proof">Proof points</Label>
               <Textarea
@@ -139,6 +166,7 @@ export function OfferingForm() {
                 {...form.register("proofPoints")}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="offering-positioning">Positioning notes</Label>
               <Textarea
@@ -148,6 +176,7 @@ export function OfferingForm() {
                 {...form.register("positioning")}
               />
             </div>
+
             <Button
               type="submit"
               className="w-full"
@@ -157,8 +186,8 @@ export function OfferingForm() {
               {createOffering.isPending ? "Saving..." : "Save Offering"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

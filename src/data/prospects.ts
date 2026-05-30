@@ -8,6 +8,8 @@ export const dummyProspects: Prospect[] = [
     role: "Sales Engineer",
     sources: ["LinkedIn", "GitHub", "Portfolio", "Company"],
     tags: ["Technical", "Mid-market", "Active"],
+    manualContext: "",
+    aiProfileSummary: "",
     createdAt: "2024-03-01",
   },
   {
@@ -17,6 +19,8 @@ export const dummyProspects: Prospect[] = [
     role: "Head of Growth",
     sources: ["LinkedIn", "Company"],
     tags: ["Growth", "Enterprise", "Decision Maker"],
+    manualContext: "",
+    aiProfileSummary: "",
     createdAt: "2024-03-05",
   },
   {
@@ -26,6 +30,8 @@ export const dummyProspects: Prospect[] = [
     role: "Founder",
     sources: ["GitHub", "Personal Site"],
     tags: ["Founder", "Technical", "Startup"],
+    manualContext: "",
+    aiProfileSummary: "",
     createdAt: "2024-03-08",
   },
   {
@@ -35,6 +41,8 @@ export const dummyProspects: Prospect[] = [
     role: "VP Sales",
     sources: ["LinkedIn", "Company", "Twitter"],
     tags: ["Sales Leader", "Enterprise"],
+    manualContext: "",
+    aiProfileSummary: "",
     createdAt: "2024-03-10",
   },
   {
@@ -44,6 +52,8 @@ export const dummyProspects: Prospect[] = [
     role: "Revenue Operations Manager",
     sources: ["LinkedIn", "GitHub"],
     tags: ["RevOps", "Mid-market", "Active"],
+    manualContext: "",
+    aiProfileSummary: "",
     createdAt: "2024-03-12",
   },
 ];

@@ -32,7 +32,7 @@ export function MessageCard({ message }: MessageCardProps) {
               >
                 {roleLabels[message.role]}
               </Badge>
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-muted-foreground">
                 {new Date(message.timestamp).toLocaleString("en-US", {
                   month: "short",
                   day: "numeric",
@@ -41,13 +41,13 @@ export function MessageCard({ message }: MessageCardProps) {
                 })}
               </span>
             </div>
-            <p className="text-sm text-zinc-700 leading-relaxed">
+            <p className="text-sm text-foreground leading-relaxed">
               {message.content}
             </p>
           </div>
         </div>
         {message.role !== "reply" && (
-          <div className="mt-3 pt-3 border-t border-zinc-100">
+          <div className="mt-3 pt-3 border-t border-border">
             <MessageActions
               rating={message.rating}
               isFavourite={message.isFavourite}

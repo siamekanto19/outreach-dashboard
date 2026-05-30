@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Figtree } from "next/font/google";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ToastProvider } from "@/components/providers/toast-provider";
 import { TRPCProvider } from "@/components/providers/trpc-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const figtree = Figtree({
+  variable: "--font-figtree",
   subsets: ["latin"],
 });
 
@@ -23,12 +24,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${outfit.variable} h-full antialiased`}
+      className={`${figtree.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <TRPCProvider>
-          <TooltipProvider>{children}</TooltipProvider>
-        </TRPCProvider>
+        <ThemeProvider>
+          <TRPCProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </TRPCProvider>
+        </ThemeProvider>
         <ToastProvider />
       </body>
     </html>

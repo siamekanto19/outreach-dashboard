@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { offerings } from "@/db/schema";
 import { completeWithOpenRouter } from "@/server/ai/openrouter";
@@ -22,6 +23,14 @@ function normalizeUrl(value?: string) {
 
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
+
+type ExtractedOffering = {
+  summary?: string;
+  targetCustomers?: string | string[];
+  positioning?: string;
+  proofPoints?: string[];
+  painPoints?: string[];
+};
 
 export const offeringsRouter = router({
   list: protectedProcedure.query(({ ctx }) => {
@@ -51,44 +60,40 @@ export const offeringsRouter = router({
             description: string;
           }
         | undefined;
-      let extracted:
-        | {
-            summary?: string;
-            targetCustomers?: string;
-            positioning?: string;
-            proofPoints?: string[];
-            painPoints?: string[];
-          }
-        | undefined;
+      let extracted: ExtractedOffering | undefined;
 
       if (input.websiteUrl) {
         scraped = await scrapeUrlWithFirecrawl(input.websiteUrl);
-        const extraction = await completeWithOpenRouter([
-          {
-            role: "system",
-            content:
-              "Extract B2B offering details from scraped website markdown. Return strict JSON only with keys: summary, targetCustomers, positioning, proofPoints, painPoints. proofPoints and painPoints must be arrays of strings.",
-          },
-          {
-            role: "user",
-            content: [
-              `Manual user context: ${input.manualContext || "none"}`,
-              `Website title: ${scraped.title || "unknown"}`,
-              `Website description: ${scraped.description || "unknown"}`,
-              "",
-              scraped.markdown.slice(0, 14000),
-            ].join("\n"),
-          },
-        ]);
+        const extraction = await completeWithOpenRouter(
+          [
+            {
+              role: "system",
+              content:
+                "Extract B2B offering details from scraped website markdown. Return JSON with keys: summary (plain text string), targetCustomers (comma-separated string), positioning (plain text string), proofPoints (array of short strings), painPoints (array of short strings).",
+            },
+            {
+              role: "user",
+              content: [
+                `Manual user context: ${input.manualContext || "none"}`,
+                `Website title: ${scraped.title || "unknown"}`,
+                `Website description: ${scraped.description || "unknown"}`,
+                "",
+                scraped.markdown.slice(0, 14000),
+              ].join("\n"),
+            },
+          ],
+          { jsonOutput: true },
+        );
 
-        try {
-          extracted = JSON.parse(extraction) as typeof extracted;
-        } catch {
-          extracted = {
-            summary: extraction,
-          };
-        }
+        extracted = JSON.parse(extraction) as ExtractedOffering;
       }
+
+      const targetCustomers =
+        input.targetCustomers ||
+        (Array.isArray(extracted?.targetCustomers)
+          ? extracted?.targetCustomers?.join(", ")
+          : extracted?.targetCustomers) ||
+        null;
 
       await db.insert(offerings).values({
         id: crypto.randomUUID(),
@@ -98,14 +103,55 @@ export const offeringsRouter = router({
         rawWebsiteContent: scraped?.markdown,
         manualContext: input.manualContext ?? "",
         aiSummary: extracted?.summary,
-        targetCustomers:
-          input.targetCustomers || extracted?.targetCustomers || null,
+        targetCustomers,
         proofPoints: lines(input.proofPoints).length
           ? lines(input.proofPoints)
           : extracted?.proofPoints ?? [],
         painPoints: extracted?.painPoints ?? [],
         positioning: input.positioning || extracted?.positioning || null,
       });
+
+      return { ok: true };
+    }),
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().trim().min(1, "Offering name is required."),
+        websiteUrl: z.string().trim().optional(),
+        manualContext: z.string().trim().optional(),
+        targetCustomers: z.string().trim().optional(),
+        proofPoints: z.string().trim().optional(),
+        positioning: z.string().trim().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [existing] = await db
+        .select()
+        .from(offerings)
+        .where(
+          and(eq(offerings.id, input.id), eq(offerings.userId, ctx.user.id)),
+        )
+        .limit(1);
+
+      if (!existing) {
+        throw new Error("Offering not found.");
+      }
+
+      await db
+        .update(offerings)
+        .set({
+          name: input.name,
+          websiteUrl: normalizeUrl(input.websiteUrl),
+          manualContext: input.manualContext ?? existing.manualContext,
+          targetCustomers: input.targetCustomers || existing.targetCustomers,
+          proofPoints: lines(input.proofPoints).length
+            ? lines(input.proofPoints)
+            : existing.proofPoints,
+          positioning: input.positioning || existing.positioning,
+          updatedAt: new Date(),
+        })
+        .where(eq(offerings.id, input.id));
 
       return { ok: true };
     }),

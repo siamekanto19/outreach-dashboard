@@ -13,10 +13,10 @@ export function MetricCard({ metric }: MetricCardProps) {
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm font-medium text-zinc-500">
+            <p className="text-sm font-medium text-muted-foreground">
               {metric.label}
             </p>
-            <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900">
+            <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
               {metric.value}
             </p>
           </div>

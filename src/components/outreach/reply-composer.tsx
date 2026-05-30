@@ -94,10 +94,10 @@ export function ReplyComposer({
       <CardContent className="pt-4">
         <form className="space-y-3">
           <div>
-            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Paste prospect reply
             </p>
-            <p className="mt-1 text-xs text-zinc-400">
+            <p className="mt-1 text-xs text-muted-foreground">
               Save the reply for history, or generate a contextual follow-up in
               one step.
             </p>
@@ -116,7 +116,7 @@ export function ReplyComposer({
             </p>
           )}
           {!hasConversation && (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Generate an outbound message first, then replies can be saved and
               answered here.
             </p>

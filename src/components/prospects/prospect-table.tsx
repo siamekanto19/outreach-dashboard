@@ -17,26 +17,26 @@ export function ProspectTable({ prospects, onSelect }: ProspectTableProps) {
         <ScrollArea className="w-full">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-zinc-200 bg-zinc-50/50">
-                <th className="py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+              <tr className="border-b border-border bg-muted/50">
+                <th className="py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Name
                 </th>
-                <th className="py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                <th className="py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Company
                 </th>
-                <th className="py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                <th className="py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Role
                 </th>
-                <th className="py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                <th className="py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Sources
                 </th>
-                <th className="py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                <th className="py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Tags
                 </th>
-                <th className="py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                <th className="py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Added
                 </th>
-                <th className="py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                <th className="py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Actions
                 </th>
               </tr>
@@ -54,7 +54,7 @@ export function ProspectTable({ prospects, onSelect }: ProspectTableProps) {
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-4 py-10 text-center text-sm text-zinc-500"
+                    className="px-4 py-10 text-center text-sm text-muted-foreground"
                   >
                     No prospects saved yet.
                   </td>

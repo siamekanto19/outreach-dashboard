@@ -26,15 +26,15 @@ export function ConversationSummary({
           conversations.map((conversation) => (
             <div
               key={conversation.id}
-              className="flex items-center justify-between rounded-lg border border-zinc-100 p-3"
+              className="flex items-center justify-between rounded-lg border border-border p-3"
             >
               <div className="flex items-center gap-3">
-                <MessageSquare className="h-4 w-4 text-zinc-400" />
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium text-zinc-700">
+                  <p className="text-sm font-medium text-foreground">
                     {conversation.prospectName}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     {conversation.offeringName}
                   </p>
                 </div>
@@ -46,7 +46,7 @@ export function ConversationSummary({
             </div>
           ))
         ) : (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             Conversations will appear after replies are saved.
           </p>
         )}
