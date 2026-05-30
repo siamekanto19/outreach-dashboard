@@ -16,10 +16,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
+import { DEFAULT_PROMPT_VALUES } from "@/lib/default-prompt";
 import { trpc } from "@/lib/trpc";
 import { Info } from "lucide-react";
 
@@ -54,18 +54,12 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
 
   const form = useForm<PromptFormValues>({
     resolver: zodResolver(promptSchema),
-    defaultValues: {
-      name: "",
-      systemPrompt: "",
-      tone: "",
-      lengthPreference: "",
-      avoidList: "",
-    },
+    defaultValues: DEFAULT_PROMPT_VALUES,
   });
 
   const updateDefaultPrompt = trpc.prompts.updateDefault.useMutation({
     onSuccess: async (data) => {
-      form.reset(data);
+      form.reset({ ...DEFAULT_PROMPT_VALUES, ...data });
       await defaultPrompt.refetch();
       toast.success("Prompt saved.");
     },
@@ -79,7 +73,7 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
   const savePrompt = trpc.prompts.saveForContext.useMutation({
     onSuccess: async (data) => {
       utils.prompts.getByContext.setData({ offeringId, prospectId }, data);
-      form.reset(data);
+      form.reset({ ...DEFAULT_PROMPT_VALUES, ...data });
       await utils.prompts.getByContext.invalidate({ offeringId, prospectId });
       toast.success("Prompt saved.");
     },
@@ -109,7 +103,7 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
 
   useEffect(() => {
     if (promptData) {
-      form.reset(promptData);
+      form.reset({ ...DEFAULT_PROMPT_VALUES, ...promptData });
     }
   }, [form, promptData]);
 
@@ -134,36 +128,49 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
     });
   }
 
-  if ((defaultPrompt.isLoading || contextPrompt.isLoading) && !promptData) {
-    return <Skeleton className="h-[360px]" />;
-  }
-
   const isCustom = contextPrompt.data?.isCustom ?? false;
   const isSaving = savePrompt.isPending || updateDefaultPrompt.isPending;
+  const mutationError =
+    savePrompt.error?.message ||
+    updateDefaultPrompt.error?.message ||
+    improvePrompt.error?.message;
 
   return (
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-sm font-semibold">System Prompt</CardTitle>
-        {promptData && (
-          <Badge
-            variant={isCustom ? "outline" : "secondary"}
-            className={
-              isCustom
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-semibold py-0.5 px-2"
-                : "text-[10px] font-semibold py-0.5 px-2"
-            }
-          >
-            {isCustom ? "Custom for selection" : "Default prompt"}
-          </Badge>
-        )}
+        <Badge
+          variant={isCustom ? "outline" : "secondary"}
+          className={
+            isCustom
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-semibold py-0.5 px-2"
+              : "text-[10px] font-semibold py-0.5 px-2"
+          }
+        >
+          {isCustom ? "Custom for selection" : "Default prompt"}
+        </Badge>
       </CardHeader>
       <CardContent className="space-y-3">
+        {(defaultPrompt.isLoading || contextPrompt.isLoading) && !promptData && (
+          <div className="rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+            Loading saved prompt settings. You can still edit the default values below.
+          </div>
+        )}
+
         {promptError && (
           <Alert className="border-destructive/30 bg-destructive/5">
             <Info className="h-4 w-4 text-destructive" />
             <AlertDescription className="text-xs text-destructive">
               Could not load prompt settings: {promptError.message}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {mutationError && (
+          <Alert className="border-destructive/30 bg-destructive/5">
+            <Info className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-xs text-destructive">
+              Last prompt action failed: {mutationError}
             </AlertDescription>
           </Alert>
         )}

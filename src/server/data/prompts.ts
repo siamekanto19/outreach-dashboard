@@ -6,9 +6,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { prompts } from "@/db/schema";
-
-export const DEFAULT_SYSTEM_PROMPT =
-  "Write a conversational outreach message under 100 words. Lead with one specific, relevant observation about the prospect before mentioning the offering. Keep it human, direct, and non-salesy. Avoid hype, generic compliments, and hard asks. End with a soft question.";
+import { DEFAULT_PROMPT_VALUES } from "@/lib/default-prompt";
 
 export async function getDefaultPromptForUser(userId: string) {
   const [existingDefault] = await db
@@ -27,11 +25,11 @@ export async function getDefaultPromptForUser(userId: string) {
       .values({
         id: crypto.randomUUID(),
         userId,
-        name: "Default outreach prompt",
-        systemPrompt: DEFAULT_SYSTEM_PROMPT,
-        tone: "Conversational",
-        lengthPreference: "Under 100 words",
-        avoidList: ["generic compliments", "salesy language", "hard asks"],
+        name: DEFAULT_PROMPT_VALUES.name,
+        systemPrompt: DEFAULT_PROMPT_VALUES.systemPrompt,
+        tone: DEFAULT_PROMPT_VALUES.tone,
+        lengthPreference: DEFAULT_PROMPT_VALUES.lengthPreference,
+        avoidList: DEFAULT_PROMPT_VALUES.avoidList.split("\n"),
         isDefault: true,
       })
       .returning();
