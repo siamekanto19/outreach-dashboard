@@ -11,6 +11,7 @@ export default function OutreachPage() {
   const conversation = trpc.dashboard.latestConversation.useQuery();
   const isLoading =
     offerings.isLoading || prospects.isLoading || conversation.isLoading;
+  const error = offerings.error ?? prospects.error ?? conversation.error;
 
   return (
     <div className="space-y-8">
@@ -23,6 +24,10 @@ export default function OutreachPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Skeleton className="h-[520px] lg:col-span-2" />
           <Skeleton className="h-[520px] lg:col-span-3" />
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
+          Could not load outreach workspace: {error.message}
         </div>
       ) : (
         <OutreachWorkspace

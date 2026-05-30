@@ -1,4 +1,5 @@
-import { and, asc, eq, lt, sql } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { and, asc, eq, lt } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import {
@@ -12,6 +13,28 @@ import {
 import { completeWithOpenRouter } from "@/server/ai/openrouter";
 import { getDefaultPromptForUser } from "@/server/data/prompts";
 import { protectedProcedure, router } from "@/server/trpc";
+
+type PromptRow = typeof prompts.$inferSelect;
+
+function notFound(message: string) {
+  return new TRPCError({ code: "NOT_FOUND", message });
+}
+
+function badRequest(message: string) {
+  return new TRPCError({ code: "BAD_REQUEST", message });
+}
+
+function promptPreferences(prompt: PromptRow) {
+  return [
+    prompt.tone ? `Tone: ${prompt.tone}` : null,
+    prompt.lengthPreference ? `Length: ${prompt.lengthPreference}` : null,
+    prompt.avoidList.length
+      ? `Avoid: ${prompt.avoidList.join(", ")}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
 export const outreachRouter = router({
   getConversationByContext: protectedProcedure
@@ -97,7 +120,7 @@ export const outreachRouter = router({
       ]);
 
       if (!offering || !prospect) {
-        throw new Error("Selected offering or prospect was not found.");
+        throw notFound("Selected offering or prospect was not found.");
       }
 
       // Check if a conversation already exists for this user + offering + prospect
@@ -148,6 +171,9 @@ export const outreachRouter = router({
             `Target customers: ${offering.targetCustomers ?? "not specified"}`,
             `Proof points: ${offering.proofPoints.join("; ") || "not provided"}`,
             `Positioning: ${offering.positioning ?? "not provided"}`,
+            promptPreferences(prompt)
+              ? `Prompt preferences:\n${promptPreferences(prompt)}`
+              : "Prompt preferences: use the saved system prompt.",
             "",
             "Prospect:",
             `Name: ${prospect.name}`,
@@ -190,7 +216,12 @@ export const outreachRouter = router({
           await tx
             .update(conversations)
             .set({ updatedAt: now })
-            .where(eq(conversations.id, existingConversation.id));
+            .where(
+              and(
+                eq(conversations.id, existingConversation.id),
+                eq(conversations.userId, ctx.user.id),
+              ),
+            );
         } else {
           await tx.insert(conversations).values({
             id: newConversationId,
@@ -262,7 +293,7 @@ export const outreachRouter = router({
         .limit(1);
 
       if (!conversation) {
-        throw new Error("Conversation was not found.");
+        throw notFound("Conversation was not found.");
       }
 
       const id = crypto.randomUUID();
@@ -280,7 +311,9 @@ export const outreachRouter = router({
       await db
         .update(conversations)
         .set({ updatedAt: now })
-        .where(eq(conversations.id, conversation.id));
+        .where(
+          and(eq(conversations.id, conversation.id), eq(conversations.userId, ctx.user.id)),
+        );
 
       return {
         id,
@@ -310,7 +343,7 @@ export const outreachRouter = router({
         .limit(1);
 
       if (!conversation) {
-        throw new Error("Conversation was not found.");
+        throw notFound("Conversation was not found.");
       }
 
       const [[offering], [prospect], thread] = await Promise.all([
@@ -342,7 +375,7 @@ export const outreachRouter = router({
       ]);
 
       if (!offering || !prospect) {
-        throw new Error("Conversation context is incomplete.");
+        throw notFound("Conversation context is incomplete.");
       }
 
       // Try to load custom prompt, otherwise fall back to default
@@ -364,6 +397,13 @@ export const outreachRouter = router({
       }
 
       let threadForPrompt = thread;
+      let pendingReply:
+        | {
+            id: string;
+            content: string;
+            createdAt: Date;
+          }
+        | null = null;
       const shouldSaveLatestReply =
         input.latestReply &&
         !thread.some(
@@ -374,14 +414,12 @@ export const outreachRouter = router({
 
       if (shouldSaveLatestReply) {
         const replyId = crypto.randomUUID();
-        await db.insert(conversationMessages).values({
+        const replyCreatedAt = new Date();
+        pendingReply = {
           id: replyId,
-          userId: ctx.user.id,
-          conversationId: conversation.id,
-          role: "prospect_reply",
           content: input.latestReply!,
-          createdAt: new Date(),
-        });
+          createdAt: replyCreatedAt,
+        };
 
         threadForPrompt = [
           ...threadForPrompt,
@@ -394,7 +432,7 @@ export const outreachRouter = router({
             generatedMessageId: null,
             rating: null,
             isFavorite: false,
-            createdAt: new Date(),
+            createdAt: replyCreatedAt,
           },
         ];
       }
@@ -417,6 +455,9 @@ export const outreachRouter = router({
             `Name: ${offering.name}`,
             `Context: ${offering.aiSummary || offering.manualContext}`,
             `Positioning: ${offering.positioning ?? "not provided"}`,
+            promptPreferences(prompt)
+              ? `Prompt preferences:\n${promptPreferences(prompt)}`
+              : "Prompt preferences: use the saved system prompt.",
             "",
             "Prospect:",
             `Name: ${prospect.name}`,
@@ -436,22 +477,47 @@ export const outreachRouter = router({
       ]);
 
       const id = crypto.randomUUID();
+      const generatedMessageId = crypto.randomUUID();
       const now = new Date();
 
       await db.transaction(async (tx) => {
+        if (pendingReply) {
+          await tx.insert(conversationMessages).values({
+            id: pendingReply.id,
+            userId: ctx.user.id,
+            conversationId: conversation.id,
+            role: "prospect_reply",
+            content: pendingReply.content,
+            createdAt: pendingReply.createdAt,
+          });
+        }
+
+        await tx.insert(generatedMessages).values({
+          id: generatedMessageId,
+          userId: ctx.user.id,
+          prospectId: prospect.id,
+          offeringId: offering.id,
+          promptId: prompt.id,
+          content,
+          tone: prompt.tone,
+        });
+
         await tx.insert(conversationMessages).values({
           id: id,
           userId: ctx.user.id,
           conversationId: conversation.id,
           role: "ai_reply",
           content,
+          generatedMessageId,
           createdAt: now,
         });
 
         await tx
           .update(conversations)
           .set({ updatedAt: now })
-          .where(eq(conversations.id, conversation.id));
+          .where(
+            and(eq(conversations.id, conversation.id), eq(conversations.userId, ctx.user.id)),
+          );
       });
 
       return {
@@ -483,7 +549,7 @@ export const outreachRouter = router({
         .limit(1);
 
       if (!conversation) {
-        throw new Error("Conversation was not found.");
+        throw notFound("Conversation was not found.");
       }
 
       const [[offering], [prospect], thread] = await Promise.all([
@@ -515,7 +581,7 @@ export const outreachRouter = router({
       ]);
 
       if (!offering || !prospect) {
-        throw new Error("Conversation context is incomplete.");
+        throw notFound("Conversation context is incomplete.");
       }
 
       // Try to load custom prompt, otherwise fall back to default
@@ -538,15 +604,6 @@ export const outreachRouter = router({
 
       const replyId = crypto.randomUUID();
       const replyNow = new Date();
-
-      await db.insert(conversationMessages).values({
-        id: replyId,
-        userId: ctx.user.id,
-        conversationId: conversation.id,
-        role: "prospect_reply",
-        content: input.content,
-        createdAt: replyNow,
-      });
 
       const replyMsgObj = {
         id: replyId,
@@ -580,6 +637,9 @@ export const outreachRouter = router({
             `Name: ${offering.name}`,
             `Context: ${offering.aiSummary || offering.manualContext}`,
             `Positioning: ${offering.positioning ?? "not provided"}`,
+            promptPreferences(prompt)
+              ? `Prompt preferences:\n${promptPreferences(prompt)}`
+              : "Prompt preferences: use the saved system prompt.",
             "",
             "Prospect:",
             `Name: ${prospect.name}`,
@@ -599,22 +659,45 @@ export const outreachRouter = router({
       ]);
 
       const followUpId = crypto.randomUUID();
+      const generatedMessageId = crypto.randomUUID();
       const followUpNow = new Date();
 
       await db.transaction(async (tx) => {
+        await tx.insert(conversationMessages).values({
+          id: replyId,
+          userId: ctx.user.id,
+          conversationId: conversation.id,
+          role: "prospect_reply",
+          content: input.content,
+          createdAt: replyNow,
+        });
+
+        await tx.insert(generatedMessages).values({
+          id: generatedMessageId,
+          userId: ctx.user.id,
+          prospectId: prospect.id,
+          offeringId: offering.id,
+          promptId: prompt.id,
+          content: followUpContent,
+          tone: prompt.tone,
+        });
+
         await tx.insert(conversationMessages).values({
           id: followUpId,
           userId: ctx.user.id,
           conversationId: conversation.id,
           role: "ai_reply",
           content: followUpContent,
+          generatedMessageId,
           createdAt: followUpNow,
         });
 
         await tx
           .update(conversations)
           .set({ updatedAt: followUpNow })
-          .where(eq(conversations.id, conversation.id));
+          .where(
+            and(eq(conversations.id, conversation.id), eq(conversations.userId, ctx.user.id)),
+          );
       });
 
       return {
@@ -649,7 +732,7 @@ export const outreachRouter = router({
         .limit(1);
 
       if (!msg) {
-        throw new Error("Message not found.");
+        throw notFound("Message not found.");
       }
 
       const nextVal = !msg.isFavorite;
@@ -658,13 +741,23 @@ export const outreachRouter = router({
         await tx
           .update(conversationMessages)
           .set({ isFavorite: nextVal })
-          .where(eq(conversationMessages.id, input.messageId));
+          .where(
+            and(
+              eq(conversationMessages.id, input.messageId),
+              eq(conversationMessages.userId, ctx.user.id),
+            ),
+          );
 
         if (msg.generatedMessageId) {
           await tx
             .update(generatedMessages)
             .set({ isFavorite: nextVal })
-            .where(eq(generatedMessages.id, msg.generatedMessageId));
+            .where(
+              and(
+                eq(generatedMessages.id, msg.generatedMessageId),
+                eq(generatedMessages.userId, ctx.user.id),
+              ),
+            );
         }
       });
 
@@ -691,20 +784,30 @@ export const outreachRouter = router({
         .limit(1);
 
       if (!msg) {
-        throw new Error("Message not found.");
+        throw notFound("Message not found.");
       }
 
       await db.transaction(async (tx) => {
         await tx
           .update(conversationMessages)
           .set({ rating: input.rating })
-          .where(eq(conversationMessages.id, input.messageId));
+          .where(
+            and(
+              eq(conversationMessages.id, input.messageId),
+              eq(conversationMessages.userId, ctx.user.id),
+            ),
+          );
 
         if (msg.generatedMessageId) {
           await tx
             .update(generatedMessages)
             .set({ rating: input.rating })
-            .where(eq(generatedMessages.id, msg.generatedMessageId));
+            .where(
+              and(
+                eq(generatedMessages.id, msg.generatedMessageId),
+                eq(generatedMessages.userId, ctx.user.id),
+              ),
+            );
         }
       });
 
@@ -726,18 +829,28 @@ export const outreachRouter = router({
         .limit(1);
 
       if (!msg) {
-        throw new Error("Message not found.");
+        throw notFound("Message not found.");
       }
 
       await db.transaction(async (tx) => {
         await tx
           .delete(conversationMessages)
-          .where(eq(conversationMessages.id, input.messageId));
+          .where(
+            and(
+              eq(conversationMessages.id, input.messageId),
+              eq(conversationMessages.userId, ctx.user.id),
+            ),
+          );
 
         if (msg.generatedMessageId) {
           await tx
             .delete(generatedMessages)
-            .where(eq(generatedMessages.id, msg.generatedMessageId));
+            .where(
+              and(
+                eq(generatedMessages.id, msg.generatedMessageId),
+                eq(generatedMessages.userId, ctx.user.id),
+              ),
+            );
         }
       });
 
@@ -759,11 +872,11 @@ export const outreachRouter = router({
         .limit(1);
 
       if (!msg) {
-        throw new Error("Message not found.");
+        throw notFound("Message not found.");
       }
 
       if (msg.role !== "outbound" && msg.role !== "ai_reply") {
-        throw new Error("Only AI-generated messages can be regenerated.");
+        throw badRequest("Only AI-generated messages can be regenerated.");
       }
 
       const [conversation] = await db
@@ -778,7 +891,7 @@ export const outreachRouter = router({
         .limit(1);
 
       if (!conversation) {
-        throw new Error("Conversation not found.");
+        throw notFound("Conversation not found.");
       }
 
       const [[offering], [prospect]] = await Promise.all([
@@ -805,7 +918,7 @@ export const outreachRouter = router({
       ]);
 
       if (!offering || !prospect) {
-        throw new Error("Conversation context is incomplete.");
+        throw notFound("Conversation context is incomplete.");
       }
 
       // Try to load custom prompt first, fallback to default
@@ -845,6 +958,9 @@ export const outreachRouter = router({
               `Target customers: ${offering.targetCustomers ?? "not specified"}`,
               `Proof points: ${offering.proofPoints.join("; ") || "not provided"}`,
               `Positioning: ${offering.positioning ?? "not provided"}`,
+              promptPreferences(prompt)
+                ? `Prompt preferences:\n${promptPreferences(prompt)}`
+                : "Prompt preferences: use the saved system prompt.",
               "",
               "Prospect:",
               `Name: ${prospect.name}`,
@@ -888,6 +1004,9 @@ export const outreachRouter = router({
               `Name: ${offering.name}`,
               `Context: ${offering.aiSummary || offering.manualContext}`,
               `Positioning: ${offering.positioning ?? "not provided"}`,
+              promptPreferences(prompt)
+                ? `Prompt preferences:\n${promptPreferences(prompt)}`
+                : "Prompt preferences: use the saved system prompt.",
               "",
               "Prospect:",
               `Name: ${prospect.name}`,
@@ -911,13 +1030,23 @@ export const outreachRouter = router({
         await tx
           .update(conversationMessages)
           .set({ content })
-          .where(eq(conversationMessages.id, input.messageId));
+          .where(
+            and(
+              eq(conversationMessages.id, input.messageId),
+              eq(conversationMessages.userId, ctx.user.id),
+            ),
+          );
 
         if (msg.generatedMessageId) {
           await tx
             .update(generatedMessages)
             .set({ content })
-            .where(eq(generatedMessages.id, msg.generatedMessageId));
+            .where(
+              and(
+                eq(generatedMessages.id, msg.generatedMessageId),
+                eq(generatedMessages.userId, ctx.user.id),
+              ),
+            );
         }
       });
 

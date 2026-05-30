@@ -100,9 +100,13 @@ export function MessageActions({
     },
   });
 
-  function handleCopy() {
-    navigator.clipboard.writeText(content);
-    toast.success("Copied to clipboard.");
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success("Copied to clipboard.");
+    } catch {
+      toast.error("Could not copy to clipboard.");
+    }
   }
 
   function handleToggleFavorite() {

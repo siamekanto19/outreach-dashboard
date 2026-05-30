@@ -14,6 +14,12 @@ type OfferingsTableProps = {
 };
 
 export function OfferingsTable({ offerings, onRowClick }: OfferingsTableProps) {
+  function externalUrl(url: string) {
+    return url.startsWith("http://") || url.startsWith("https://")
+      ? url
+      : `https://${url}`;
+  }
+
   const columns = useMemo<ColumnDef<Offering>[]>(
     () => [
       {
@@ -29,7 +35,7 @@ export function OfferingsTable({ offerings, onRowClick }: OfferingsTableProps) {
         cell: ({ row }) =>
           row.original.url ? (
             <a
-              href={row.original.url}
+              href={externalUrl(row.original.url)}
               target="_blank"
               rel="noreferrer"
               className="text-primary hover:underline font-medium text-xs"

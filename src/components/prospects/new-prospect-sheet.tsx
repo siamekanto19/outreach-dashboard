@@ -21,18 +21,34 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/toast";
 import { Link2, Code2, Globe, Building2, Upload, X, ImageIcon } from "lucide-react";
 
-const prospectSchema = z.object({
-  name: z.string().trim().min(1, "Prospect name is required."),
-  company: z.string().trim().optional(),
-  role: z.string().trim().optional(),
-  manualContext: z.string().trim().optional(),
-  tags: z.string().trim().optional(),
-  githubUrl: z.string().trim().optional(),
-  personalUrl: z.string().trim().optional(),
-  companyUrl: z.string().trim().optional(),
-  customUrl: z.string().trim().optional(),
-  linkedinImage: z.string().trim().optional(),
-});
+const prospectSchema = z
+  .object({
+    name: z.string().trim().min(1, "Prospect name is required."),
+    company: z.string().trim().optional(),
+    role: z.string().trim().optional(),
+    manualContext: z.string().trim().optional(),
+    tags: z.string().trim().optional(),
+    githubUrl: z.string().trim().optional(),
+    personalUrl: z.string().trim().optional(),
+    companyUrl: z.string().trim().optional(),
+    customUrl: z.string().trim().optional(),
+    linkedinImage: z.string().trim().optional(),
+  })
+  .refine(
+    (value) =>
+      Boolean(
+        value.manualContext ||
+          value.githubUrl ||
+          value.personalUrl ||
+          value.companyUrl ||
+          value.customUrl ||
+          value.linkedinImage,
+      ),
+    {
+      message: "Add at least one context source for this prospect.",
+      path: ["manualContext"],
+    },
+  );
 
 type ProspectFormValues = z.infer<typeof prospectSchema>;
 
@@ -182,8 +198,14 @@ export function NewProspectSheet({ open, onOpenChange }: NewProspectSheetProps) 
                 id="prospect-context"
                 placeholder="Anything useful you already know about this prospect..."
                 rows={3}
+                aria-invalid={Boolean(form.formState.errors.manualContext)}
                 {...form.register("manualContext")}
               />
+              {form.formState.errors.manualContext && (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.manualContext.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

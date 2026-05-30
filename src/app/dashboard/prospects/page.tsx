@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { ProspectsTable } from "@/components/prospects/prospects-table";
 import { ProspectDetailSheet } from "@/components/prospects/prospect-detail-sheet";
@@ -22,6 +22,19 @@ export default function ProspectsPage() {
     setDetailOpen(true);
   }
 
+  useEffect(() => {
+    if (!selectedProspect || !prospects.data) {
+      return;
+    }
+
+    const freshProspect = prospects.data.find(
+      (prospect) => prospect.id === selectedProspect.id,
+    );
+    if (freshProspect) {
+      setSelectedProspect(freshProspect);
+    }
+  }, [prospects.data, selectedProspect]);
+
   return (
     <div className="space-y-8">
       <DashboardHeader
@@ -37,6 +50,10 @@ export default function ProspectsPage() {
 
       {prospects.isLoading ? (
         <Skeleton className="h-[420px]" />
+      ) : prospects.error ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
+          Could not load prospects: {prospects.error.message}
+        </div>
       ) : (
         <ProspectsTable
           prospects={prospects.data ?? []}

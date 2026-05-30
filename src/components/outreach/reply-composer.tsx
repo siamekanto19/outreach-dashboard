@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Send } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ type ReplyComposerProps = {
   conversationId: string;
   hasConversation: boolean;
   onMessageSaved: (message: ConversationMessage) => void;
+  onMessageRemoved: (messageId: string) => void;
   onTypingChange?: (isTyping: boolean) => void;
 };
 
@@ -29,9 +30,11 @@ export function ReplyComposer({
   conversationId,
   hasConversation,
   onMessageSaved,
+  onMessageRemoved,
   onTypingChange,
 }: ReplyComposerProps) {
   const utils = trpc.useUtils();
+  const optimisticReplyRef = useRef<ConversationMessage | null>(null);
   const form = useForm<ReplyFormValues>({
     resolver: zodResolver(replySchema),
     defaultValues: {
@@ -44,6 +47,7 @@ export function ReplyComposer({
       // Append the real reply and follow-up (the real reply will filter out the optimistic one)
       onMessageSaved(data.reply);
       onMessageSaved(data.followUp);
+      optimisticReplyRef.current = null;
       await Promise.all([
         utils.outreach.getConversationByContext.invalidate(),
         utils.dashboard.analytics.invalidate(),
@@ -51,6 +55,11 @@ export function ReplyComposer({
       ]);
     },
     onError: (error) => {
+      if (optimisticReplyRef.current) {
+        onMessageRemoved(optimisticReplyRef.current.id);
+        form.reset({ reply: optimisticReplyRef.current.content });
+        optimisticReplyRef.current = null;
+      }
       toast.error({
         title: "Could not save reply",
         description: error.message,
@@ -74,6 +83,7 @@ export function ReplyComposer({
       content: contentToSubmit,
       timestamp: new Date().toISOString(),
     };
+    optimisticReplyRef.current = optimisticReply;
     onMessageSaved(optimisticReply);
 
     // 2. Instantly reset the input text area so it feels fast and responsive like real chat

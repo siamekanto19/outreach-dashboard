@@ -98,7 +98,7 @@ export const promptsRouter = router({
           avoidList: splitAvoidList(input.avoidList),
           updatedAt: new Date(),
         })
-        .where(eq(prompts.id, prompt.id))
+        .where(and(eq(prompts.id, prompt.id), eq(prompts.userId, ctx.user.id)))
         .returning();
 
       return {
@@ -141,7 +141,7 @@ export const promptsRouter = router({
             avoidList: splitAvoidList(input.avoidList),
             updatedAt: new Date(),
           })
-          .where(eq(prompts.id, existing.id))
+          .where(and(eq(prompts.id, existing.id), eq(prompts.userId, ctx.user.id)))
           .returning();
 
         return {

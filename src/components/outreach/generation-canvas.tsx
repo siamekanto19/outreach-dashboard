@@ -16,6 +16,7 @@ type GenerationCanvasProps = {
   offering: Offering;
   prospect: Prospect;
   onMessageSaved: (message: ConversationMessage) => void;
+  onMessageRemoved: (messageId: string) => void;
 };
 
 export function GenerationCanvas({
@@ -23,6 +24,7 @@ export function GenerationCanvas({
   offering,
   prospect,
   onMessageSaved,
+  onMessageRemoved,
 }: GenerationCanvasProps) {
   const [isTyping, setIsTyping] = useState(false);
 
@@ -55,6 +57,7 @@ export function GenerationCanvas({
         conversationId={conversation.id}
         hasConversation={conversation.id !== "draft" && conversation.id !== "empty"}
         onMessageSaved={onMessageSaved}
+        onMessageRemoved={onMessageRemoved}
         onTypingChange={setIsTyping}
       />
     </div>

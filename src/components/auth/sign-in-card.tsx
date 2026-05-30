@@ -82,15 +82,7 @@ export function SignInCard() {
             )}
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <button
-                type="button"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Forgot password?
-              </button>
-            </div>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"

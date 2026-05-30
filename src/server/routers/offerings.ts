@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { offerings } from "@/db/schema";
@@ -31,6 +32,21 @@ type ExtractedOffering = {
   proofPoints?: string[];
   painPoints?: string[];
 };
+
+function notFound(message: string) {
+  return new TRPCError({ code: "NOT_FOUND", message });
+}
+
+function parseExtractedOffering(value: string): ExtractedOffering {
+  try {
+    return JSON.parse(value) as ExtractedOffering;
+  } catch {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "AI extraction returned unreadable offering details. Try saving with more manual context or retry the scrape.",
+    });
+  }
+}
 
 export const offeringsRouter = router({
   list: protectedProcedure.query(({ ctx }) => {
@@ -85,7 +101,7 @@ export const offeringsRouter = router({
           { jsonOutput: true },
         );
 
-        extracted = JSON.parse(extraction) as ExtractedOffering;
+        extracted = parseExtractedOffering(extraction);
       }
 
       const targetCustomers =
@@ -135,23 +151,25 @@ export const offeringsRouter = router({
         .limit(1);
 
       if (!existing) {
-        throw new Error("Offering not found.");
+        throw notFound("Offering not found.");
       }
+
+      const proofPoints = lines(input.proofPoints);
 
       await db
         .update(offerings)
         .set({
           name: input.name,
           websiteUrl: normalizeUrl(input.websiteUrl),
-          manualContext: input.manualContext ?? existing.manualContext,
-          targetCustomers: input.targetCustomers || existing.targetCustomers,
-          proofPoints: lines(input.proofPoints).length
-            ? lines(input.proofPoints)
-            : existing.proofPoints,
-          positioning: input.positioning || existing.positioning,
+          manualContext: input.manualContext ?? "",
+          targetCustomers: input.targetCustomers || null,
+          proofPoints,
+          positioning: input.positioning || null,
           updatedAt: new Date(),
         })
-        .where(eq(offerings.id, input.id));
+        .where(
+          and(eq(offerings.id, input.id), eq(offerings.userId, ctx.user.id)),
+        );
 
       return { ok: true };
     }),

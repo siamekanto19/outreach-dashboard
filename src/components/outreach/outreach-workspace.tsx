@@ -114,6 +114,13 @@ export function OutreachWorkspace({
     });
   }
 
+  function handleMessageRemoved(messageId: string) {
+    setActiveConversation((current) => ({
+      ...current,
+      messages: current.messages.filter((message) => message.id !== messageId),
+    }));
+  }
+
   const displayConversation = activeConversation;
 
   return (
@@ -137,6 +144,7 @@ export function OutreachWorkspace({
             offering={activeOffering}
             prospect={activeProspect}
             onMessageSaved={handleMessageSaved}
+            onMessageRemoved={handleMessageRemoved}
           />
         ) : (
           <Card>

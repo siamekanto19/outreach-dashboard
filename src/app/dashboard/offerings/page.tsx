@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { OfferingsTable } from "@/components/offerings/offerings-table";
 import { OfferingDetailSheet } from "@/components/offerings/offering-detail-sheet";
@@ -22,6 +22,19 @@ export default function OfferingsPage() {
     setDetailOpen(true);
   }
 
+  useEffect(() => {
+    if (!selectedOffering || !offerings.data) {
+      return;
+    }
+
+    const freshOffering = offerings.data.find(
+      (offering) => offering.id === selectedOffering.id,
+    );
+    if (freshOffering) {
+      setSelectedOffering(freshOffering);
+    }
+  }, [offerings.data, selectedOffering]);
+
   return (
     <div className="space-y-8">
       <DashboardHeader
@@ -37,6 +50,10 @@ export default function OfferingsPage() {
 
       {offerings.isLoading ? (
         <Skeleton className="h-[420px]" />
+      ) : offerings.error ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
+          Could not load offerings: {offerings.error.message}
+        </div>
       ) : (
         <OfferingsTable
           offerings={offerings.data ?? []}

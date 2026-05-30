@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { prospectSources, prospects } from "@/db/schema";
@@ -36,6 +37,35 @@ type ScrapedSource = {
   extractedSummary: string | null;
   status: string;
 };
+
+const prospectInput = z
+  .object({
+    name: z.string().trim().min(1, "Prospect name is required."),
+    company: z.string().trim().optional(),
+    role: z.string().trim().optional(),
+    manualContext: z.string().trim().optional(),
+    tags: z.string().trim().optional(),
+    githubUrl: z.string().trim().optional(),
+    personalUrl: z.string().trim().optional(),
+    companyUrl: z.string().trim().optional(),
+    customUrl: z.string().trim().optional(),
+    linkedinImage: z.string().trim().optional(),
+  })
+  .refine(
+    (value) =>
+      Boolean(
+        value.manualContext ||
+          value.githubUrl ||
+          value.personalUrl ||
+          value.companyUrl ||
+          value.customUrl ||
+          value.linkedinImage,
+      ),
+    {
+      message: "Add at least one context source for this prospect.",
+      path: ["manualContext"],
+    },
+  );
 
 async function extractFromImage(imageBase64: string): Promise<ExtractedProfile | undefined> {
   try {
@@ -101,20 +131,7 @@ export const prospectsRouter = router({
     return getProspectsForUser(ctx.user.id);
   }),
   create: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().trim().min(1, "Prospect name is required."),
-        company: z.string().trim().optional(),
-        role: z.string().trim().optional(),
-        manualContext: z.string().trim().optional(),
-        tags: z.string().trim().optional(),
-        githubUrl: z.string().trim().optional(),
-        personalUrl: z.string().trim().optional(),
-        companyUrl: z.string().trim().optional(),
-        customUrl: z.string().trim().optional(),
-        linkedinImage: z.string().trim().optional(),
-      }),
-    )
+    .input(prospectInput)
     .mutation(async ({ ctx, input }) => {
       const prospectId = crypto.randomUUID();
       const sourceInputs = [
@@ -210,20 +227,20 @@ export const prospectsRouter = router({
         .limit(1);
 
       if (!existing) {
-        throw new Error("Prospect not found.");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Prospect not found." });
       }
 
       await db
         .update(prospects)
         .set({
           name: input.name,
-          company: input.company || existing.company,
-          role: input.role || existing.role,
-          manualContext: input.manualContext ?? existing.manualContext,
-          tags: csv(input.tags).length ? csv(input.tags) : existing.tags,
+          company: input.company || null,
+          role: input.role || null,
+          manualContext: input.manualContext || null,
+          tags: csv(input.tags),
           updatedAt: new Date(),
         })
-        .where(eq(prospects.id, input.id));
+        .where(and(eq(prospects.id, input.id), eq(prospects.userId, ctx.user.id)));
 
       return { ok: true };
     }),
