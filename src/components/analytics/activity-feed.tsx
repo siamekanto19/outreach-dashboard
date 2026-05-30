@@ -15,8 +15,8 @@ export function ActivityFeed({ items }: ActivityFeedProps) {
           Recent Activity
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[320px]">
+      <CardContent className="px-0 h-100">
+        <ScrollArea className="h-100 px-4">
           <div className="space-y-0">
             {items.length ? (
               items.map((item, index) => (

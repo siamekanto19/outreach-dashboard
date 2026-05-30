@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Figtree } from "next/font/google";
+import { Open_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ToastProvider } from "@/components/providers/toast-provider";
 import { TRPCProvider } from "@/components/providers/trpc-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const figtree = Figtree({
-  variable: "--font-figtree",
+const openSans = Open_Sans({
+  variable: "--font-open-sans",
   subsets: ["latin"],
 });
 
@@ -24,7 +24,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${figtree.variable} h-full antialiased`}
+      className={`${openSans.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
