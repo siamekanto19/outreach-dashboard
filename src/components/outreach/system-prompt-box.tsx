@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,9 +31,20 @@ const promptSchema = z.object({
 
 type PromptFormValues = z.infer<typeof promptSchema>;
 
-export function SystemPromptBox() {
+type SystemPromptBoxProps = {
+  offeringId?: string;
+  prospectId?: string;
+};
+
+export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps) {
   const utils = trpc.useUtils();
-  const prompt = trpc.prompts.default.useQuery();
+  
+  // Use context-aware query to load prompt for current offering + prospect
+  const prompt = trpc.prompts.getByContext.useQuery(
+    { offeringId, prospectId },
+    { enabled: !!offeringId && !!prospectId }
+  );
+
   const form = useForm<PromptFormValues>({
     resolver: zodResolver(promptSchema),
     defaultValues: {
@@ -44,10 +56,13 @@ export function SystemPromptBox() {
     },
   });
 
-  const savePrompt = trpc.prompts.updateDefault.useMutation({
+  // Save prompt mutation for selected context
+  const savePrompt = trpc.prompts.saveForContext.useMutation({
     onSuccess: async (data) => {
+      // Manually set React Query cache instantly to prevent stale flash
+      utils.prompts.getByContext.setData({ offeringId, prospectId }, data);
       form.reset(data);
-      await utils.prompts.default.invalidate();
+      await utils.prompts.getByContext.invalidate({ offeringId, prospectId });
       toast.success("Prompt saved.");
     },
     onError: (error) => {
@@ -81,17 +96,48 @@ export function SystemPromptBox() {
   }, [form, prompt.data]);
 
   function handleImprove() {
+    const currentInstructions = form.getValues("systemPrompt");
+    if (!currentInstructions || currentInstructions.trim().length < 5) {
+      toast.error("Please enter a short system prompt or instruction first before improving with AI.");
+      return;
+    }
     improvePrompt.mutate(form.getValues());
+  }
+
+  function onSubmit(values: PromptFormValues) {
+    if (!offeringId || !prospectId) {
+      toast.error("Please select an offering and a prospect first.");
+      return;
+    }
+    savePrompt.mutate({
+      ...values,
+      offeringId,
+      prospectId,
+    });
   }
 
   if (prompt.isLoading) {
     return <Skeleton className="h-[360px]" />;
   }
 
+  const isCustom = prompt.data?.isCustom ?? false;
+
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-sm font-semibold">System Prompt</CardTitle>
+        {prompt.data && (
+          <Badge
+            variant={isCustom ? "outline" : "secondary"}
+            className={
+              isCustom
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-semibold py-0.5 px-2"
+                : "text-[10px] font-semibold py-0.5 px-2"
+            }
+          >
+            {isCustom ? "Custom for selection" : "Default prompt"}
+          </Badge>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         <Alert className="border-border bg-muted">
@@ -104,7 +150,7 @@ export function SystemPromptBox() {
         </Alert>
 
         <form
-          onSubmit={form.handleSubmit((values) => savePrompt.mutate(values))}
+          onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-3"
         >
           <div className="space-y-1.5">

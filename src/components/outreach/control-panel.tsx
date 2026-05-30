@@ -77,7 +77,11 @@ export function ControlPanel({
         </CardContent>
       </Card>
 
-      <SystemPromptBox />
+      <SystemPromptBox
+        key={`${selectedOfferingId}-${selectedProspectId}`}
+        offeringId={selectedOfferingId}
+        prospectId={selectedProspectId}
+      />
 
       <Button
         className="w-full"

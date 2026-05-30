@@ -44,6 +44,8 @@ export const prompts = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    offeringId: text("offering_id").references(() => offerings.id, { onDelete: "cascade" }),
+    prospectId: text("prospect_id").references(() => prospects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     systemPrompt: text("system_prompt").notNull(),
     tone: text("tone"),
@@ -54,6 +56,8 @@ export const prompts = pgTable(
   },
   (table) => [
     index("prompts_user_id_idx").on(table.userId),
+    index("prompts_offering_id_idx").on(table.offeringId),
+    index("prompts_prospect_id_idx").on(table.prospectId),
     uniqueIndex("prompts_user_default_unique")
       .on(table.userId)
       .where(sql`${table.isDefault} = true`),

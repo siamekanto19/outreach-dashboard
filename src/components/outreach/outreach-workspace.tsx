@@ -31,6 +31,12 @@ export function OutreachWorkspace({
   const [activeConversation, setActiveConversation] =
     useState<Conversation>(conversation);
 
+  // Fetch conversation context automatically when offering or prospect changes
+  const { data: conversationData } = trpc.outreach.getConversationByContext.useQuery(
+    { offeringId: selectedOfferingId, prospectId: selectedProspectId },
+    { enabled: !!selectedOfferingId && !!selectedProspectId }
+  );
+
   useEffect(() => {
     setSelectedOfferingId((current) => current || offerings[0]?.id || "");
   }, [offerings]);
@@ -40,8 +46,18 @@ export function OutreachWorkspace({
   }, [prospects]);
 
   useEffect(() => {
-    setActiveConversation(conversation);
-  }, [conversation]);
+    if (conversationData) {
+      setActiveConversation(conversationData);
+    } else {
+      setActiveConversation({
+        id: "draft",
+        offeringId: selectedOfferingId,
+        prospectId: selectedProspectId,
+        messages: [],
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }, [conversationData, selectedOfferingId, selectedProspectId]);
 
   const activeOffering = useMemo(
     () => offerings.find((offering) => offering.id === selectedOfferingId),
@@ -56,6 +72,10 @@ export function OutreachWorkspace({
     onSuccess: async (newConversation) => {
       setActiveConversation(newConversation);
       await Promise.all([
+        utils.outreach.getConversationByContext.invalidate({
+          offeringId: selectedOfferingId,
+          prospectId: selectedProspectId,
+        }),
         utils.dashboard.analytics.invalidate(),
         utils.dashboard.latestConversation.invalidate(),
       ]);
@@ -82,23 +102,19 @@ export function OutreachWorkspace({
   }
 
   function handleMessageSaved(message: Conversation["messages"][number]) {
-    setActiveConversation((current) => ({
-      ...current,
-      messages: [...current.messages, message],
-    }));
+    setActiveConversation((current) => {
+      // Filter out any optimistic reply that has the same content to prevent duplication
+      const filteredMessages = current.messages.filter(
+        (m) => !(m.id.startsWith("optimistic-") && m.content.trim() === message.content.trim())
+      );
+      return {
+        ...current,
+        messages: [...filteredMessages, message],
+      };
+    });
   }
 
-  const displayConversation =
-    activeConversation.offeringId === selectedOfferingId &&
-    activeConversation.prospectId === selectedProspectId
-      ? activeConversation
-      : {
-          id: "draft",
-          offeringId: selectedOfferingId,
-          prospectId: selectedProspectId,
-          messages: [],
-          createdAt: new Date().toISOString(),
-        };
+  const displayConversation = activeConversation;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">

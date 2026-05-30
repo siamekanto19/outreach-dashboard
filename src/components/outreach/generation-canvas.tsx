@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +24,8 @@ export function GenerationCanvas({
   prospect,
   onMessageSaved,
 }: GenerationCanvasProps) {
+  const [isTyping, setIsTyping] = useState(false);
+
   return (
     <div className="space-y-4">
       <Card>
@@ -40,7 +45,7 @@ export function GenerationCanvas({
           </div>
         </CardHeader>
         <CardContent>
-          <ConversationThread messages={conversation.messages} />
+          <ConversationThread messages={conversation.messages} isTyping={isTyping} />
         </CardContent>
       </Card>
 
@@ -50,6 +55,7 @@ export function GenerationCanvas({
         conversationId={conversation.id}
         hasConversation={conversation.id !== "draft" && conversation.id !== "empty"}
         onMessageSaved={onMessageSaved}
+        onTypingChange={setIsTyping}
       />
     </div>
   );
