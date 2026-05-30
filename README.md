@@ -95,7 +95,6 @@ Generated follow-up example:
 
 - Add password reset.
 - Add delete/archive controls for offerings and prospects.
-- Add background jobs for long-running scraping and screenshot extraction.
 - Add richer message experiments by tone or angle.
 - Add deployment seed/demo data and a guided walkthrough mode.
 
