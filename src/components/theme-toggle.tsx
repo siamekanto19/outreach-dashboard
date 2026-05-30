@@ -1,3 +1,7 @@
+/*
+ * Theme toggle control.
+ * Switches the dashboard between light and dark modes through next-themes.
+ */
 "use client";
 
 import { useTheme } from "next-themes";

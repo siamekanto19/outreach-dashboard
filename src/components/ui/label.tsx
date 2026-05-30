@@ -1,3 +1,7 @@
+/*
+ * Shared label primitive.
+ * Provides consistent typography and disabled-state styling for form labels.
+ */
 "use client"
 
 import * as React from "react"

@@ -1,3 +1,8 @@
+/*
+ * Inline actions for generated outreach messages.
+ * Provides copy, favorite, regenerate, rating, and delete controls with tRPC
+ * mutations, cache invalidation, loading states, and toast feedback.
+ */
 "use client";
 
 import { Button } from "@/components/ui/button";

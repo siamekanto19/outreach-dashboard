@@ -1,3 +1,8 @@
+/*
+ * Prospect detail and edit side sheet.
+ * Shows saved prospect context and lets users edit profile fields, tags, and
+ * manual notes with validation, loading state, and toast feedback.
+ */
 "use client";
 
 import { useState, useEffect } from "react";

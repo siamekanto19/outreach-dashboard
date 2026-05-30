@@ -1,3 +1,8 @@
+/*
+ * Data-table prospect management view.
+ * Defines sortable-looking prospect columns and exposes a row action for
+ * opening the detail sheet.
+ */
 "use client";
 
 import { useMemo } from "react";

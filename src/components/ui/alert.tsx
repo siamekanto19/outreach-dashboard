@@ -1,3 +1,8 @@
+/*
+ * Shared alert primitives.
+ * Defines informational and destructive alert containers plus title and
+ * description slots for inline guidance and validation context.
+ */
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 

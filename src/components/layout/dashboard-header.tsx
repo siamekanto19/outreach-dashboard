@@ -1,3 +1,8 @@
+/*
+ * Reusable dashboard page header.
+ * Displays the page title, optional description, and optional action control
+ * used across dashboard sections.
+ */
 import { ReactNode } from "react";
 
 type DashboardHeaderProps = {

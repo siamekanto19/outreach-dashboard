@@ -1,3 +1,8 @@
+/*
+ * Shared avatar primitives.
+ * Wraps Base UI avatar image and fallback components for user identity display
+ * in navigation and account surfaces.
+ */
 "use client"
 
 import * as React from "react"

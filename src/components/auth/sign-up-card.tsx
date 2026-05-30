@@ -1,3 +1,8 @@
+/*
+ * Sign-up form card.
+ * Validates account fields, creates a Better Auth email/password user, shows
+ * feedback, and sends new users into the dashboard.
+ */
 "use client";
 
 import Link from "next/link";

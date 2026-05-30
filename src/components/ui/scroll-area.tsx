@@ -1,3 +1,8 @@
+/*
+ * Shared scroll area primitive.
+ * Wraps Base UI scroll area parts with viewport, scrollbar, and thumb styling
+ * for contained scrolling regions.
+ */
 "use client"
 
 import * as React from "react"

@@ -1,3 +1,8 @@
+/*
+ * Offering detail and edit side sheet.
+ * Shows saved offering context and lets users update website, audience, proof,
+ * and positioning fields with validation and mutation feedback.
+ */
 "use client";
 
 import { useState, useEffect } from "react";

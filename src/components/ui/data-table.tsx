@@ -1,3 +1,8 @@
+/*
+ * Generic TanStack data table component.
+ * Renders column definitions and row models with the app's table primitives for
+ * offerings, prospects, and other dashboard lists.
+ */
 "use client";
 
 import {

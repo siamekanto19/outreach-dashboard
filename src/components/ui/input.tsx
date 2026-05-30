@@ -1,3 +1,8 @@
+/*
+ * Shared input primitive.
+ * Wraps Base UI input with the app's standard sizing, border, focus, invalid,
+ * and disabled styles.
+ */
 import * as React from "react"
 import { Input as InputPrimitive } from "@base-ui/react/input"
 

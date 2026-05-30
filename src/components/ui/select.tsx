@@ -1,3 +1,8 @@
+/*
+ * Shared select primitives.
+ * Wraps Base UI select parts with consistent trigger, popup, item, scroll, and
+ * indicator styling for custom dropdown controls.
+ */
 "use client"
 
 import * as React from "react"

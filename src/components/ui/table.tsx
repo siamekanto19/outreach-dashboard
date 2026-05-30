@@ -1,3 +1,8 @@
+/*
+ * Shared table primitives.
+ * Provides styled table, header, body, row, cell, caption, and footer elements
+ * for dense dashboard data displays.
+ */
 "use client"
 
 import * as React from "react"

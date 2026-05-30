@@ -1,3 +1,8 @@
+/*
+ * Context-aware system prompt editor.
+ * Loads default or selection-specific prompts and lets users save or improve
+ * the instructions that guide AI outreach generation.
+ */
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";

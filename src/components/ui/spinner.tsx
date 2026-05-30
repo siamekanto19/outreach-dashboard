@@ -1,3 +1,8 @@
+/*
+ * Loading spinner primitive.
+ * Renders the shared animated loader icon used inside pending buttons and
+ * blocking states.
+ */
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

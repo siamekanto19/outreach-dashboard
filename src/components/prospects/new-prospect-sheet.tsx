@@ -1,3 +1,8 @@
+/*
+ * New prospect side sheet.
+ * Provides the main prospect creation form with manual context, URL sources,
+ * LinkedIn screenshot upload, validation, loading state, and toast feedback.
+ */
 "use client";
 
 import { useState, useRef, useEffect } from "react";

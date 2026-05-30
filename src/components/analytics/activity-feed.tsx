@@ -1,3 +1,8 @@
+/*
+ * Analytics activity feed component.
+ * Displays recent user activity such as generated messages and newly added
+ * prospects inside a scrollable dashboard card.
+ */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";

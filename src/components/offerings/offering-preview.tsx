@@ -1,3 +1,8 @@
+/*
+ * Offering detail preview card.
+ * Displays the selected offering's website, audience, proof points, and
+ * positioning notes in a read-only summary layout.
+ */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";

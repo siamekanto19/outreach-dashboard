@@ -1,3 +1,8 @@
+/*
+ * Prospect ingestion form panel.
+ * Captures flexible prospect source inputs and manual context for workflows
+ * that need a card-based prospect entry experience.
+ */
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";

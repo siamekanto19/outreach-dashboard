@@ -1,3 +1,8 @@
+/*
+ * Reply capture and follow-up composer.
+ * Lets the user paste a prospect reply, optimistically adds it to the thread,
+ * and asks the backend to save the reply plus generate a contextual response.
+ */
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";

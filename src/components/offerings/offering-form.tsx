@@ -1,3 +1,8 @@
+/*
+ * Standalone offering creation form.
+ * Captures URL and manual offering context, validates the required inputs, and
+ * saves new offerings through tRPC with loading and toast feedback.
+ */
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";

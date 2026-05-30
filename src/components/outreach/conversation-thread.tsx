@@ -1,3 +1,8 @@
+/*
+ * Scrollable outreach conversation thread.
+ * Renders saved outbound, prospect reply, and AI follow-up messages while
+ * auto-scrolling as new messages or typing states appear.
+ */
 "use client";
 
 import { useEffect, useRef } from "react";

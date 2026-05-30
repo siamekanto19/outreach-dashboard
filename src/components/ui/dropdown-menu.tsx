@@ -1,3 +1,8 @@
+/*
+ * Shared dropdown menu primitives.
+ * Wraps Base UI menu components with the app's standard menu, item, checkbox,
+ * radio, shortcut, and submenu styling.
+ */
 "use client"
 
 import * as React from "react"

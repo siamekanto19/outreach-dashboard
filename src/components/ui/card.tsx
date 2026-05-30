@@ -1,3 +1,8 @@
+/*
+ * Shared card primitives.
+ * Defines the standard card container, header, content, footer, title, and
+ * description elements used throughout the dashboard.
+ */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"

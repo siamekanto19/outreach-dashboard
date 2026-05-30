@@ -1,3 +1,8 @@
+/*
+ * Card-based offering list.
+ * Renders a collection of offerings with an empty state for older or compact
+ * offering management surfaces.
+ */
 import { Offering } from "@/types/offering";
 import { OfferingCard } from "./offering-card";
 

@@ -1,3 +1,8 @@
+/*
+ * Shared tooltip primitives.
+ * Wraps Base UI tooltip with standard provider, trigger, content, and arrow
+ * styling for icon-only and compact controls.
+ */
 "use client"
 
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"

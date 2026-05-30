@@ -1,3 +1,8 @@
+/*
+ * Shared tabs primitives.
+ * Wraps Base UI tabs with the app's list, trigger, and panel styling for
+ * segmented content views.
+ */
 "use client"
 
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"

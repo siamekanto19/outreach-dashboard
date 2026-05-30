@@ -1,3 +1,8 @@
+/*
+ * Outreach generation control panel.
+ * Lets the user choose an offering and prospect, edit the active system prompt,
+ * and trigger personalized message generation.
+ */
 "use client";
 
 import { Button } from "@/components/ui/button";

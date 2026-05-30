@@ -1,3 +1,8 @@
+/*
+ * Compact prospect list row.
+ * Renders a prospect's core identity, source tags, and row-level actions for
+ * list-style prospect management surfaces.
+ */
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

@@ -1,3 +1,8 @@
+/*
+ * Authenticated dashboard sidebar navigation.
+ * Shows primary product routes, user identity, theme controls, and sign-out
+ * behavior for the dashboard shell.
+ */
 "use client";
 
 import Link from "next/link";

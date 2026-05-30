@@ -1,3 +1,8 @@
+/*
+ * Dashboard shell layout wrapper.
+ * Provides the base full-height background and layout container for signed-in
+ * dashboard pages.
+ */
 import { ReactNode } from "react";
 
 type DashboardShellProps = {

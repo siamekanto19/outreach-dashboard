@@ -1,3 +1,8 @@
+/*
+ * Shared dialog primitives.
+ * Wraps Base UI dialog with the app's overlay, content, header, footer, title,
+ * description, and close-button styling.
+ */
 "use client"
 
 import * as React from "react"

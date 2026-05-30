@@ -1,3 +1,8 @@
+/*
+ * Dashboard metric summary card.
+ * Renders one high-level analytics number with supporting trend styling for
+ * the overview grid.
+ */
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Metric } from "@/types/analytics";

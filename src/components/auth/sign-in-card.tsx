@@ -1,3 +1,8 @@
+/*
+ * Sign-in form card.
+ * Validates email/password credentials, calls Better Auth, shows toast
+ * feedback, and routes successful users into the dashboard.
+ */
 "use client";
 
 import Link from "next/link";

@@ -1,3 +1,8 @@
+/*
+ * Shared progress primitive.
+ * Wraps Base UI progress with track and indicator styles for visualizing
+ * proportional dashboard values.
+ */
 "use client"
 
 import { Progress as ProgressPrimitive } from "@base-ui/react/progress"

@@ -1,3 +1,8 @@
+/*
+ * Client-side authenticated dashboard shell.
+ * Verifies the Better Auth session in the browser, redirects anonymous users,
+ * and renders the sidebar around protected dashboard content.
+ */
 "use client";
 
 import { useEffect, useState } from "react";

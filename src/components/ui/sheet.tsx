@@ -1,3 +1,8 @@
+/*
+ * Shared sheet primitives.
+ * Builds side-panel behavior on top of Base UI dialog for create/edit flows and
+ * detail drawers.
+ */
 "use client"
 
 import * as React from "react"

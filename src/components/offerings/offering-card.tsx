@@ -1,3 +1,8 @@
+/*
+ * Compact offering card.
+ * Presents one offering's core context and row-style actions for card-based
+ * offering management views.
+ */
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

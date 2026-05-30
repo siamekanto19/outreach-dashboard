@@ -1,3 +1,8 @@
+/*
+ * New offering side sheet.
+ * Provides the primary offering creation flow with website scraping fields,
+ * manual context, validation, loading state, and toast feedback.
+ */
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";

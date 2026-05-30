@@ -1,3 +1,8 @@
+/*
+ * Shared button primitive.
+ * Defines the app's button variants, sizes, icon stroke handling, and Base UI
+ * button wrapper used across all interactive controls.
+ */
 import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"

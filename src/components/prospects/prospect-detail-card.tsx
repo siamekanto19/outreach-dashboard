@@ -1,3 +1,8 @@
+/*
+ * Prospect detail preview card.
+ * Shows the currently selected prospect's company, role, tags, sources, and
+ * saved context in a compact read-only layout.
+ */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";

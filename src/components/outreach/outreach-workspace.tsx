@@ -1,3 +1,8 @@
+/*
+ * Top-level outreach workspace state manager.
+ * Coordinates selected offering/prospect state, loads existing conversations,
+ * triggers generation, and passes message updates into the canvas.
+ */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

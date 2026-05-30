@@ -1,3 +1,8 @@
+/*
+ * Client-side tRPC provider.
+ * Creates the TanStack Query client and tRPC HTTP client used by dashboard
+ * components for typed queries, mutations, and cache invalidation.
+ */
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

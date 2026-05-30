@@ -1,3 +1,8 @@
+/*
+ * Shared textarea primitive.
+ * Provides the app's standard multiline input styling with forwarded refs for
+ * form libraries and composed field components.
+ */
 import * as React from "react"
 import { cn } from "@/lib/utils"
 

@@ -1,3 +1,8 @@
+/*
+ * Single conversation message bubble.
+ * Applies sender-specific styling and exposes message actions for AI-generated
+ * outbound and follow-up messages.
+ */
 "use client";
 
 import { ConversationMessage } from "@/types/outreach";

@@ -1,3 +1,8 @@
+/*
+ * Data-table offering management view.
+ * Defines offering columns, external website links, and the action for opening
+ * the offering detail sheet.
+ */
 "use client";
 
 import { useMemo } from "react";

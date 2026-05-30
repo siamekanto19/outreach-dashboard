@@ -1,3 +1,8 @@
+/*
+ * Card-based prospect table.
+ * Displays saved prospects in a scrollable list and delegates each row to the
+ * prospect row component for compact actions.
+ */
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";

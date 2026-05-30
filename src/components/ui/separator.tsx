@@ -1,3 +1,8 @@
+/*
+ * Shared separator primitive.
+ * Wraps Base UI separator with the app's horizontal and vertical divider
+ * styles.
+ */
 "use client"
 
 import { Separator as SeparatorPrimitive } from "@base-ui/react/separator"

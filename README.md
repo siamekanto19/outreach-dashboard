@@ -19,10 +19,13 @@ Required environment variables:
 DATABASE_URL=
 BETTER_AUTH_SECRET=
 BETTER_AUTH_URL=
+BETTER_AUTH_TRUSTED_ORIGINS=
 FIRECRAWL_API_KEY=
 OPENROUTER_API_KEY=
 OPENROUTER_MODEL=
 ```
+
+For production, set `BETTER_AUTH_URL` to the exact deployed app origin, for example `https://your-app.vercel.app`. If you use multiple production or preview domains, add them to `BETTER_AUTH_TRUSTED_ORIGINS` as a comma-separated list.
 
 ## Product Flow
 

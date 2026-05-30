@@ -1,3 +1,8 @@
+/*
+ * Main conversation canvas for the outreach workspace.
+ * Combines the conversation thread and reply composer for the selected
+ * offering/prospect pair.
+ */
 "use client";
 
 import { useState } from "react";

@@ -1,3 +1,8 @@
+/*
+ * Analytics card for comparing offering usage.
+ * Shows how many generated messages each offering produced and visualizes its
+ * share of total generation activity with progress bars.
+ */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { OfferingUsage } from "@/types/analytics";

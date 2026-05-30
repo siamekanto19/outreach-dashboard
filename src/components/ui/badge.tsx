@@ -1,3 +1,8 @@
+/*
+ * Shared badge primitive.
+ * Defines small status and metadata label variants used for tags, sources,
+ * audiences, and compact dashboard annotations.
+ */
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
 import { cva, type VariantProps } from "class-variance-authority"
