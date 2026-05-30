@@ -3,7 +3,7 @@
  * Ensures every user has a usable default outreach system prompt before they
  * customize prompts for specific offering/prospect contexts.
  */
-import { desc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { prompts } from "@/db/schema";
 
@@ -14,27 +14,40 @@ export async function getDefaultPromptForUser(userId: string) {
   const [existingDefault] = await db
     .select()
     .from(prompts)
-    .where(eq(prompts.userId, userId))
-    .orderBy(desc(prompts.isDefault), desc(prompts.updatedAt))
+    .where(and(eq(prompts.userId, userId), eq(prompts.isDefault, true)))
     .limit(1);
 
   if (existingDefault) {
     return existingDefault;
   }
 
-  const [created] = await db
-    .insert(prompts)
-    .values({
-      id: crypto.randomUUID(),
-      userId,
-      name: "Default outreach prompt",
-      systemPrompt: DEFAULT_SYSTEM_PROMPT,
-      tone: "Conversational",
-      lengthPreference: "Under 100 words",
-      avoidList: ["generic compliments", "salesy language", "hard asks"],
-      isDefault: true,
-    })
-    .returning();
+  try {
+    const [created] = await db
+      .insert(prompts)
+      .values({
+        id: crypto.randomUUID(),
+        userId,
+        name: "Default outreach prompt",
+        systemPrompt: DEFAULT_SYSTEM_PROMPT,
+        tone: "Conversational",
+        lengthPreference: "Under 100 words",
+        avoidList: ["generic compliments", "salesy language", "hard asks"],
+        isDefault: true,
+      })
+      .returning();
 
-  return created;
+    return created;
+  } catch {
+    const [createdByConcurrentRequest] = await db
+      .select()
+      .from(prompts)
+      .where(and(eq(prompts.userId, userId), eq(prompts.isDefault, true)))
+      .limit(1);
+
+    if (createdByConcurrentRequest) {
+      return createdByConcurrentRequest;
+    }
+
+    throw new Error("Could not create default outreach prompt.");
+  }
 }

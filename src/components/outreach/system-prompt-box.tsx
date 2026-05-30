@@ -43,12 +43,14 @@ type SystemPromptBoxProps = {
 
 export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps) {
   const utils = trpc.useUtils();
-  
-  // Use context-aware query to load prompt for current offering + prospect
-  const prompt = trpc.prompts.getByContext.useQuery(
+
+  const defaultPrompt = trpc.prompts.default.useQuery();
+  const contextPrompt = trpc.prompts.getByContext.useQuery(
     { offeringId, prospectId },
     { enabled: !!offeringId && !!prospectId }
   );
+  const promptData = contextPrompt.data ?? defaultPrompt.data;
+  const promptError = contextPrompt.error ?? defaultPrompt.error;
 
   const form = useForm<PromptFormValues>({
     resolver: zodResolver(promptSchema),
@@ -61,10 +63,21 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
     },
   });
 
-  // Save prompt mutation for selected context
+  const updateDefaultPrompt = trpc.prompts.updateDefault.useMutation({
+    onSuccess: async (data) => {
+      form.reset(data);
+      await defaultPrompt.refetch();
+      toast.success("Prompt saved.");
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not save prompt",
+        description: error.message,
+      });
+    },
+  });
   const savePrompt = trpc.prompts.saveForContext.useMutation({
     onSuccess: async (data) => {
-      // Manually set React Query cache instantly to prevent stale flash
       utils.prompts.getByContext.setData({ offeringId, prospectId }, data);
       form.reset(data);
       await utils.prompts.getByContext.invalidate({ offeringId, prospectId });
@@ -95,10 +108,10 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
   });
 
   useEffect(() => {
-    if (prompt.data) {
-      form.reset(prompt.data);
+    if (promptData) {
+      form.reset(promptData);
     }
-  }, [form, prompt.data]);
+  }, [form, promptData]);
 
   function handleImprove() {
     const currentInstructions = form.getValues("systemPrompt");
@@ -111,7 +124,7 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
 
   function onSubmit(values: PromptFormValues) {
     if (!offeringId || !prospectId) {
-      toast.error("Please select an offering and a prospect first.");
+      updateDefaultPrompt.mutate(values);
       return;
     }
     savePrompt.mutate({
@@ -121,17 +134,18 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
     });
   }
 
-  if (prompt.isLoading) {
+  if ((defaultPrompt.isLoading || contextPrompt.isLoading) && !promptData) {
     return <Skeleton className="h-[360px]" />;
   }
 
-  const isCustom = prompt.data?.isCustom ?? false;
+  const isCustom = contextPrompt.data?.isCustom ?? false;
+  const isSaving = savePrompt.isPending || updateDefaultPrompt.isPending;
 
   return (
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-sm font-semibold">System Prompt</CardTitle>
-        {prompt.data && (
+        {promptData && (
           <Badge
             variant={isCustom ? "outline" : "secondary"}
             className={
@@ -145,6 +159,15 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
         )}
       </CardHeader>
       <CardContent className="space-y-3">
+        {promptError && (
+          <Alert className="border-destructive/30 bg-destructive/5">
+            <Info className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-xs text-destructive">
+              Could not load prompt settings: {promptError.message}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Alert className="border-border bg-muted">
           <Info className="h-4 w-4" />
           <AlertDescription className="text-xs text-muted-foreground">
@@ -232,7 +255,7 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
             <Button
               type="button"
               variant="outline"
-              disabled={improvePrompt.isPending || savePrompt.isPending}
+              disabled={improvePrompt.isPending || isSaving}
               onClick={handleImprove}
             >
               {improvePrompt.isPending ? (
@@ -242,9 +265,9 @@ export function SystemPromptBox({ offeringId, prospectId }: SystemPromptBoxProps
               )}
               Improve with AI
             </Button>
-            <Button type="submit" disabled={savePrompt.isPending}>
-              {savePrompt.isPending && <Spinner className="mr-2" />}
-              {savePrompt.isPending ? "Saving..." : "Save Prompt"}
+            <Button type="submit" disabled={isSaving}>
+              {isSaving && <Spinner className="mr-2" />}
+              {isSaving ? "Saving..." : "Save Prompt"}
             </Button>
           </div>
         </form>
