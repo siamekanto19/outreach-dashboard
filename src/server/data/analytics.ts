@@ -3,7 +3,7 @@
  * Aggregates user-scoped counts, recent activity, top offering usage, and
  * latest conversation summaries from the database.
  */
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   conversationMessages,
@@ -43,7 +43,12 @@ export async function getAnalyticsForUser(userId: string) {
         count: sql<number>`count(distinct ${conversationMessages.conversationId})::int`,
       })
       .from(conversationMessages)
-      .where(sql`${conversationMessages.userId} = ${userId} and ${conversationMessages.role} = 'reply'`),
+      .where(
+        and(
+          eq(conversationMessages.userId, userId),
+          eq(conversationMessages.role, "prospect_reply"),
+        ),
+      ),
     db
       .select({
         name: offerings.name,
