@@ -46,7 +46,7 @@ export async function completeWithOpenRouter(
   }
 
   const body: Record<string, unknown> = {
-    model: process.env.OPENROUTER_MODEL ?? "anthropic/claude-3.5-sonnet",
+    model: process.env.OPENROUTER_MODEL ?? "openai/gpt-4o-mini",
     messages,
     temperature: 0.4,
   };
