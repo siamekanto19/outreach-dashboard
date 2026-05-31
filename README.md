@@ -74,7 +74,7 @@ Prospect input: Sarah Chen, sales engineer at a B2B SaaS company, recently discu
 
 Generated outbound example:
 
-> Hey Sarah, saw your note about outreach volume turning into a qualification problem. That is exactly the gap Kakiyo is built around: it helps run the LinkedIn conversation and qualify the lead before a rep has to jump in. Might be worth a look if your team is trying to scale without making every thread feel automated?
+> Hi Sarah, I noticed you recently mentioned challenges with outreach volume and qualification bottlenecks. It sounds like a tough balancing act! Kakiyo is designed to automate personalized LinkedIn conversations while maintaining that human touch, helping you focus on closing deals instead. Would you be open to exploring how it might ease some of those challenges for you?
 
 Prospect reply:
 
@@ -82,7 +82,7 @@ Prospect reply:
 
 Generated follow-up example:
 
-> Good question. Kakiyo connects to the workflow you already use and handles the conversation logic around qualification, so the setup depends on how you want LinkedIn messages routed. The important part is that it is not just blasting templates; it uses the prospect context and conversation state to decide the next reply. Want me to send the short version of the setup flow?
+> Absolutely, Kakiyo integrates with your LinkedIn account to manage conversations seamlessly. It uses AI to craft personalized messages and handle replies, so you can focus on the more critical aspects of your sales process. Would you like to see a quick demo of how it operates in real-time?
 
 ## Tradeoffs
 
