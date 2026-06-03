@@ -28,14 +28,20 @@ const navItems = [
   { label: "Outreach", href: "/dashboard/outreach", icon: Send },
 ];
 
-type SidebarNavProps = {
+type SidebarNavContentProps = {
   user: {
     name: string;
     email: string;
   };
+  onNavigate?: () => void;
+  showThemeToggle?: boolean;
 };
 
-export function SidebarNav({ user }: SidebarNavProps) {
+export function SidebarNavContent({
+  user,
+  onNavigate,
+  showThemeToggle = false,
+}: SidebarNavContentProps) {
   const pathname = usePathname();
   const router = useRouter();
   const initials = user.name
@@ -69,9 +75,9 @@ export function SidebarNav({ user }: SidebarNavProps) {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 flex w-[260px] flex-col border-r border-sidebar-border bg-sidebar">
+    <div className="flex h-full flex-col bg-sidebar">
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2" onClick={onNavigate}>
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold">
             O
           </div>
@@ -79,7 +85,7 @@ export function SidebarNav({ user }: SidebarNavProps) {
             Outreach
           </span>
         </Link>
-        <ThemeToggle />
+        {showThemeToggle && <ThemeToggle />}
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
@@ -90,6 +96,7 @@ export function SidebarNav({ user }: SidebarNavProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 active
@@ -136,6 +143,21 @@ export function SidebarNav({ user }: SidebarNavProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+    </div>
+  );
+}
+
+type SidebarNavProps = {
+  user: {
+    name: string;
+    email: string;
+  };
+};
+
+export function SidebarNav({ user }: SidebarNavProps) {
+  return (
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+      <SidebarNavContent user={user} showThemeToggle />
     </aside>
   );
 }

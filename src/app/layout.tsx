@@ -27,7 +27,7 @@ export default function RootLayout({
       className={`${openSans.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col overflow-x-hidden">
         <ThemeProvider>
           <TRPCProvider>
             <TooltipProvider>{children}</TooltipProvider>
