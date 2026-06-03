@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { MobileDashboardHeader } from "@/components/layout/mobile-dashboard-header";
 import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/lib/auth-client";
 
@@ -45,6 +46,7 @@ export function DashboardClientShell({
   return (
     <div className="relative min-h-screen">
       <SidebarNav user={session.data.user} />
+      <MobileDashboardHeader user={session.data.user} />
       <DashboardShell>{children}</DashboardShell>
     </div>
   );

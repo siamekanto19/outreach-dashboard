@@ -23,11 +23,11 @@ export function OfferingUsageCard({ offerings }: OfferingUsageCardProps) {
         {offerings.length ? (
           offerings.map((offering) => (
             <div key={offering.name} className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <span className="min-w-0 truncate font-medium text-foreground">
                   {offering.name}
                 </span>
-                <span className="text-muted-foreground">
+                <span className="shrink-0 text-muted-foreground">
                   {offering.messagesGenerated} messages
                 </span>
               </div>
